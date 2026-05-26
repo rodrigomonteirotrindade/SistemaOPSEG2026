@@ -1,33 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Dashboard</title>
+<title>Dashboard Power BI</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
     margin:0;
     font-family:Arial;
     display:flex;
-    background:#f1f5f9;
+    background:#0f172a;
+    color:white;
 }
 
 /* SIDEBAR */
 .sidebar {
     width:220px;
-    background:#0f172a;
-    color:white;
-    height:100vh;
+    background:#020617;
     padding:20px;
+    height:100vh;
     position:fixed;
 }
 
 .sidebar h2 {
-    margin-bottom:20px;
+    color:#38bdf8;
 }
 
 .sidebar a {
     display:block;
-    color:white;
+    color:#cbd5f5;
     margin:10px 0;
     text-decoration:none;
     padding:10px;
@@ -45,14 +46,11 @@ body {
     width:100%;
 }
 
-/* TOPBAR */
+/* TOP */
 .topbar {
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:20px;
     display:flex;
     justify-content:space-between;
+    margin-bottom:20px;
 }
 
 /* CARDS */
@@ -63,46 +61,46 @@ body {
 }
 
 .card {
-    background:white;
-    padding:20px;
-    border-radius:10px;
     flex:1;
-    text-align:center;
+    padding:20px;
+    border-radius:12px;
+    color:white;
     font-size:18px;
-    box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* FORM */
-form {
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:20px;
+.total { background:linear-gradient(45deg,#3b82f6,#06b6d4); }
+.n1 { background:#22c55e; }
+.n2 { background:#eab308; }
+.n3 { background:#f97316; }
+.n4 { background:#ef4444; }
+
+/* GRID */
+.grid {
+    display:grid;
+    grid-template-columns: 2fr 1fr;
+    gap:20px;
 }
 
-form input, form select, form button {
-    padding:10px;
-    margin:5px;
+/* BOX */
+.box {
+    background:#1e293b;
+    padding:20px;
+    border-radius:12px;
 }
 
 /* TABLE */
 table {
     width:100%;
-    background:white;
     border-collapse:collapse;
-    border-radius:10px;
-    overflow:hidden;
 }
 
 th, td {
-    padding:10px;
-    border-bottom:1px solid #ddd;
+    padding:8px;
     text-align:center;
 }
 
 th {
     background:#2563eb;
-    color:white;
 }
 </style>
 </head>
@@ -112,100 +110,118 @@ th {
 <!-- SIDEBAR -->
 <div class="sidebar">
     <h2>OPSEG</h2>
-
     <a href="/">Dashboard</a>
     <a href="/grafico">Gráficos</a>
-    <a href="/usuarios">Cadastrar Usuário</a>
+    <a href="/usuarios">Usuários</a>
     <a href="/clientes">Clientes</a>
     <a href="/logout">Sair</a>
 </div>
 
-<!-- CONTEÚDO -->
 <div class="main">
 
 <!-- TOPO -->
 <div class="topbar">
-    <h3>Dashboard Operacional</h3>
-    <span>Usuário: {{ current_user.id }}</span>
+    <h2>Dashboard Executivo</h2>
+    <span>{{ current_user.id }}</span>
+</div>
+
+<!-- FILTRO -->
+<div class="box">
+<form method="GET">
+<select name="operador">
+<option value="todos">Todos</option>
+{% for op in operadores %}
+<option value="{{ op }}">{{ op }}</option>
+{% endfor %}
+</select>
+<button>Filtrar</button>
+</form>
 </div>
 
 <!-- CARDS -->
 <div class="cards">
-    <div class="card">Total<br><b>{{ total }}</b></div>
-    <div class="card">N1<br><b>{{ n1 }}</b></div>
-    <div class="card">N2<br><b>{{ n2 }}</b></div>
-    <div class="card">N3<br><b>{{ n3 }}</b></div>
-    <div class="card">N4<br><b>{{ n4 }}</b></div>
+    <div class="card total">Total<br><b>{{ total }}</b></div>
+    <div class="card n1">N1<br><b>{{ n1 }}</b></div>
+    <div class="card n2">N2<br><b>{{ n2 }}</b></div>
+    <div class="card n3">N3<br><b>{{ n3 }}</b></div>
+    <div class="card n4">N4<br><b>{{ n4 }}</b></div>
+</div>
+
+<!-- GRID -->
+<div class="grid">
+
+<!-- GRÁFICO -->
+<div class="box">
+<h3>Distribuição</h3>
+
+<canvas id="grafico"></canvas>
+
+<h2>💰 Total: R$ {{ (n1*1.99 + n2*2.99 + n3*4.99 + n4*7.99)|round(2) }}</h2>
+</div>
+
+<!-- RANKING -->
+<div class="box">
+<h3>Ranking Operadores</h3>
+
+<table>
+<tr><th>Operador</th><th>Total</th></tr>
+
+{% for r in ranking %}
+<tr>
+<td>{{ r[0] }}</td>
+<td>{{ r[1] }}</td>
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+
 </div>
 
 <!-- FORM -->
+<div class="box">
 <form method="POST">
 
 <input type="date" name="data" required>
 
-<input name="titulo" placeholder="Título do trabalho" required>
+<input name="titulo" placeholder="Título" required>
 
 <select name="cliente" required>
-    <option value="">Selecione o cliente</option>
-    {% for c in clientes %}
-    <option value="{{ c }}">{{ c }}</option>
-    {% endfor %}
+<option value="">Cliente</option>
+{% for c in clientes %}
+<option value="{{ c }}">{{ c }}</option>
+{% endfor %}
 </select>
 
-<input name="colaborador" placeholder="Colaborador" required>
+<input name="colaborador" placeholder="Operador" required>
 
-<select name="nivel" required>
-<option value="1">Nível 1</option>
-<option value="2">Nível 2</option>
-<option value="3">Nível 3</option>
-<option value="4">Nível 4</option>
+<select name="nivel">
+<option value="1">N1</option>
+<option value="2">N2</option>
+<option value="3">N3</option>
+<option value="4">N4</option>
 </select>
 
 <button>Salvar</button>
 
 </form>
-
-<!-- TABELA -->
-<table>
-<tr>
-<th>ID</th>
-<th>Data</th>
-<th>Título</th>
-<th>Cliente</th>
-<th>Colaborador</th>
-<th>Nível</th>
-<th>Ação</th>
-</tr>
-
-{% for r in registros %}
-<tr>
-<td>{{ r[0] }}</td>
-<td>{{ r[1] }}</td>
-<td>{{ r[2] }}</td>
-<td>{{ r[3] }}</td>
-<td>{{ r[4] }}</td>
-
-<td>
-<form action="/editar/{{ r[0] }}" method="POST">
-<select name="nivel">
-<option value="1" {% if r[5]=='1' %}selected{% endif %}>1</option>
-<option value="2" {% if r[5]=='2' %}selected{% endif %}>2</option>
-<option value="3" {% if r[5]=='3' %}selected{% endif %}>3</option>
-<option value="4" {% if r[5]=='4' %}selected{% endif %}>4</option>
-</select>
-<button>OK</button>
-</form>
-</td>
-
-<td>
-<a href="/delete/{{ r[0] }}">Excluir</a>
-</td>
-
-</tr>
-{% endfor %}
-</table>
+</div>
 
 </div>
+
+<script>
+new Chart(document.getElementById("grafico"), {
+type: 'doughnut',
+data: {
+labels: ["N1","N2","N3","N4"],
+datasets: [{
+data: [{{ n1 }}, {{ n2 }}, {{ n3 }}, {{ n4 }}],
+backgroundColor: ["#22c55e","#eab308","#f97316","#ef4444"]
+}]
+}
+});
+</script>
 
 </body>
 </html>

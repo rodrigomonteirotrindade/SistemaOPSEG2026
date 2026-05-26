@@ -41,7 +41,6 @@ def criar_banco():
     )
     """)
 
-    # LOGIN PADRÃO CRIPTOGRAFADO
     senha_hash = bcrypt.generate_password_hash("evt123456").decode('utf-8')
     c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg', ?, 'admin')", (senha_hash,))
 
@@ -102,9 +101,12 @@ def logout():
 @login_required
 def index():
 
+    operador_filtro = request.args.get("operador")
+
     db = get_db()
     c = db.cursor()
 
+    # SALVAR REGISTRO
     if request.method == "POST":
         c.execute("""
         INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
@@ -119,24 +121,32 @@ def index():
         db.commit()
         return redirect("/")
 
-    c.execute("SELECT * FROM registros")
+    # FILTRO
+    if operador_filtro and operador_filtro != "todos":
+        c.execute("SELECT * FROM registros WHERE colaborador=?", (operador_filtro,))
+    else:
+        c.execute("SELECT * FROM registros")
+
     registros = c.fetchall()
 
     total = len(registros)
 
-    # CONTADORES
     def count(n):
         return len([r for r in registros if r[5] == n])
 
     n1, n2, n3, n4 = count("1"), count("2"), count("3"), count("4")
 
-    # RANKING OPERADOR
+    # RANKING
     ranking = {}
     for r in registros:
         op = r[4]
         ranking[op] = ranking.get(op, 0) + 1
 
     ranking = sorted(ranking.items(), key=lambda x: x[1], reverse=True)
+
+    # OPERADORES
+    c.execute("SELECT DISTINCT colaborador FROM registros")
+    operadores = [x[0] for x in c.fetchall()]
 
     # CLIENTES
     c.execute("SELECT nome FROM clientes")
@@ -148,7 +158,9 @@ def index():
         registros=registros,
         total=total,n1=n1,n2=n2,n3=n3,n4=n4,
         ranking=ranking,
+        operadores=operadores,
         clientes=clientes,
+        operador_filtro=operador_filtro,
         current_user=current_user
     )
 
@@ -159,6 +171,8 @@ def grafico():
 
     cliente = request.args.get("cliente")
 
+    valores = {"1":1.99,"2":2.99,"3":4.99,"4":7.99}
+
     db = get_db()
     c = db.cursor()
 
@@ -168,19 +182,32 @@ def grafico():
         c.execute("SELECT nivel FROM registros")
 
     dados = [0,0,0,0]
+    total_valor = 0
 
     for n in c.fetchall():
-        if n[0] == "1": dados[0]+=1
-        if n[0] == "2": dados[1]+=1
-        if n[0] == "3": dados[2]+=1
-        if n[0] == "4": dados[3]+=1
+        if n[0] == "1":
+            dados[0]+=1
+            total_valor += valores["1"]
+        elif n[0] == "2":
+            dados[1]+=1
+            total_valor += valores["2"]
+        elif n[0] == "3":
+            dados[2]+=1
+            total_valor += valores["3"]
+        elif n[0] == "4":
+            dados[3]+=1
+            total_valor += valores["4"]
 
     c.execute("SELECT nome FROM clientes")
     clientes = [x[0] for x in c.fetchall()]
 
     db.close()
 
-    return render_template("grafico.html", dados=dados, clientes=clientes)
+    return render_template("grafico.html",
+        dados=dados,
+        clientes=clientes,
+        total_valor=round(total_valor,2)
+    )
 
 # ================= USUÁRIOS =================
 @app.route("/usuarios", methods=["GET","POST"])
@@ -222,7 +249,7 @@ def clientes():
 
     return render_template("clientes.html")
 
-# ================= PDF =================
+# ================= EXPORTAR PDF =================
 @app.route("/exportar")
 @login_required
 def exportar():
@@ -238,7 +265,7 @@ def exportar():
 
     y = 800
     for r in dados:
-        pdf.drawString(50, y, f"{r}")
+        pdf.drawString(50, y, str(r))
         y -= 20
 
     pdf.save()
