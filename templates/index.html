@@ -2,55 +2,160 @@
 <html>
 <head>
 <title>Dashboard</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {margin:0;font-family:Arial;background:#0f172a;color:white;display:flex;}
-.sidebar {width:220px;background:#020617;padding:20px;height:100vh;position:fixed;}
-.sidebar a {display:block;color:#cbd5f5;margin:10px 0;padding:10px;text-decoration:none;}
-.main {margin-left:240px;padding:20px;width:100%;}
-.cards {display:flex;gap:10px;margin-bottom:20px;}
-.card {flex:1;padding:15px;border-radius:10px;text-align:center;}
-.total{background:#3b82f6;} .n1{background:#22c55e;}
-.n2{background:#eab308;} .n3{background:#f97316;} .n4{background:#ef4444;}
-.box {background:#1e293b;padding:20px;border-radius:10px;margin-bottom:20px;}
+body {
+    margin:0;
+    font-family:Arial;
+    background:#0f172a;
+    color:white;
+    display:flex;
+}
+
+.sidebar {
+    width:220px;
+    background:#020617;
+    padding:20px;
+    height:100vh;
+    position:fixed;
+}
+
+.sidebar h2 {
+    color:#38bdf8;
+}
+
+.sidebar a {
+    display:block;
+    color:#cbd5f5;
+    margin:10px 0;
+    padding:10px;
+    text-decoration:none;
+    border-radius:5px;
+}
+
+.sidebar a:hover {
+    background:#1e293b;
+}
+
+.main {
+    margin-left:240px;
+    padding:20px;
+    width:100%;
+}
+
+.cards {
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
+}
+
+.card {
+    flex:1;
+    padding:15px;
+    border-radius:10px;
+    text-align:center;
+    font-size:18px;
+}
+
+.total{background:#3b82f6;}
+.n1{background:#22c55e;}
+.n2{background:#eab308;}
+.n3{background:#f97316;}
+.n4{background:#ef4444;}
+
+.box {
+    background:#1e293b;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+table {
+    width:100%;
+    border-collapse:collapse;
+}
+
+th, td {
+    padding:10px;
+    text-align:center;
+}
+
+th {
+    background:#334155;
+}
+
+tr:nth-child(even){
+    background:#0f172a;
+}
+
+button {
+    padding:10px;
+    border:none;
+    border-radius:5px;
+    background:#3b82f6;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover {
+    background:#2563eb;
+}
+
+input, select {
+    padding:8px;
+    margin:5px;
+    border-radius:5px;
+    border:none;
+}
 </style>
+
 </head>
 
 <body>
 
+<!-- MENU -->
 <div class="sidebar">
-<h2>OPSEG</h2>
-<a href="/">Dashboard</a>
-<a href="/logout">Sair</a>
+    <h2>OPSEG</h2>
+
+    <a href="/">Dashboard</a>
+    <a href="/grafico">Gráficos</a>
+    <a href="/logout">Sair</a>
 </div>
 
+<!-- CONTEÚDO -->
 <div class="main">
 
 <h2>Dashboard</h2>
 
+<!-- FILTRO -->
 <div class="box">
 <form method="GET">
 
 <select name="operador">
-<option value="todos">Todos</option>
+<option value="todos">Todos Operadores</option>
 {% for op in operadores %}
 <option value="{{ op }}">{{ op }}</option>
 {% endfor %}
 </select>
 
-<br><br>
+<br>
 
+<label>Data início:</label>
 <input type="date" name="data_inicio" value="{{ data_inicio }}">
+
+<label>Data fim:</label>
 <input type="date" name="data_fim" value="{{ data_fim }}">
 
 <br><br>
 
-<button>Filtrar</button>
+<button type="submit">Filtrar</button>
 
 </form>
 </div>
 
+<!-- CARDS -->
 <div class="cards">
 <div class="card total">Total<br>{{ total }}</div>
 <div class="card n1">N1<br>{{ n1 }}</div>
@@ -59,23 +164,37 @@ body {margin:0;font-family:Arial;background:#0f172a;color:white;display:flex;}
 <div class="card n4">N4<br>{{ n4 }}</div>
 </div>
 
+<!-- GRÁFICO -->
 <div class="box" style="width:350px;">
 <canvas id="grafico"></canvas>
-<h3>R$ {{ (n1*1.99 + n2*2.99 + n3*4.99 + n4*7.99)|round(2) }}</h3>
+
+<h3>
+Total R$ {{
+(n1*1.99 + n2*2.99 + n3*4.99 + n4*7.99)|round(2)
+}}
+</h3>
 </div>
 
+<!-- RANKING -->
 <div class="box">
-<h3>Ranking</h3>
+<h3>Ranking Operadores</h3>
+
 {% for r in ranking %}
 <p>{{ r[0] }} - {{ r[1] }}</p>
 {% endfor %}
+
 </div>
 
+<!-- FORMULÁRIO -->
 <div class="box">
+
+<h3>Novo Lançamento</h3>
+
 <form method="POST">
 
 <input type="date" name="data" required>
-<input name="titulo" placeholder="Título" required>
+
+<input name="titulo" placeholder="Título do trabalho" required>
 
 <select name="cliente">
 {% for c in clientes %}
@@ -86,26 +205,63 @@ body {margin:0;font-family:Arial;background:#0f172a;color:white;display:flex;}
 <input name="colaborador" placeholder="Operador" required>
 
 <select name="nivel">
-<option value="1">N1</option>
-<option value="2">N2</option>
-<option value="3">N3</option>
-<option value="4">N4</option>
+<option value="1">Nível 1</option>
+<option value="2">Nível 2</option>
+<option value="3">Nível 3</option>
+<option value="4">Nível 4</option>
 </select>
 
-<button>Salvar</button>
+<br><br>
+
+<button type="submit">Salvar</button>
 
 </form>
-</div>
 
 </div>
 
+<!-- TABELA -->
+<div class="box">
+
+<h3>Registros</h3>
+
+<table>
+
+<tr>
+<th>Data</th>
+<th>Título</th>
+<th>Cliente</th>
+<th>Operador</th>
+<th>Nível</th>
+<th>Ação</th>
+</tr>
+
+{% for r in registros %}
+<tr>
+<td>{{ r[1] }}</td>
+<td>{{ r[2] }}</td>
+<td>{{ r[3] }}</td>
+<td>{{ r[4] }}</td>
+<td>{{ r[5] }}</td>
+<td>
+<a href="/excluir/{{ r[0] }}" style="color:red;">Excluir</a>
+</td>
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+
+</div>
+
+<!-- SCRIPT GRÁFICO -->
 <script>
 new Chart(document.getElementById("grafico"), {
 type: 'doughnut',
 data: {
 labels: ["N1","N2","N3","N4"],
 datasets: [{
-data: [{{ n1 }},{{ n2 }},{{ n3 }},{{ n4 }}],
+data: [{{ n1 }}, {{ n2 }}, {{ n3 }}, {{ n4 }}],
 backgroundColor: ["green","yellow","orange","red"]
 }]
 }

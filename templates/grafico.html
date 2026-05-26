@@ -7,36 +7,13 @@
 
 <body>
 
-<h2>Gráfico de Níveis</h2>
-
-<form method="GET">
-
-<select name="cliente">
-<option value="todos">Todos Clientes</option>
-{% for c in clientes %}
-<option value="{{ c }}">{{ c }}</option>
-{% endfor %}
-</select>
-
-<br><br>
-
-<label>Data início:</label>
-<input type="date" name="data_inicio">
-
-<label>Data fim:</label>
-<input type="date" name="data_fim">
-
-<br><br>
-
-<button>Filtrar</button>
-
-</form>
+<h2>Gráfico</h2>
 
 <div style="width:300px;">
 <canvas id="grafico"></canvas>
 </div>
 
-<h3>Total em R$: {{ total_valor }}</h3>
+<h3>Total: R$ {{ total_valor }}</h3>
 
 <script>
 new Chart(document.getElementById("grafico"), {
@@ -47,6 +24,19 @@ datasets: [{
 data: {{ dados }},
 backgroundColor: ["green","yellow","orange","red"]
 }]
+},
+options: {
+plugins: {
+tooltip: {
+callbacks: {
+label: function(context) {
+let valores = {{ valores }};
+let i = context.dataIndex;
+return context.label + ": R$ " + valores[i];
+}
+}
+}
+}
 }
 });
 </script>

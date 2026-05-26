@@ -90,6 +90,15 @@ def logout():
     logout_user()
     return redirect("/login")
 
+# ================= EXCLUIR =================
+@app.route("/excluir/<int:id>")
+@login_required
+def excluir(id):
+    with get_db() as db:
+        c = db.cursor()
+        c.execute("DELETE FROM registros WHERE id=?", (id,))
+    return redirect("/")
+
 # ================= DASHBOARD =================
 @app.route("/", methods=["GET","POST"])
 @login_required
@@ -143,7 +152,6 @@ def index():
 
         n1, n2, n3, n4 = count("1"), count("2"), count("3"), count("4")
 
-        # RANKING
         ranking = {}
         for r in registros:
             op = r[4]
@@ -151,11 +159,9 @@ def index():
 
         ranking = sorted(ranking.items(), key=lambda x: x[1], reverse=True)
 
-        # OPERADORES
         c.execute("SELECT DISTINCT colaborador FROM registros")
         operadores = [x[0] for x in c.fetchall()]
 
-        # CLIENTES
         c.execute("SELECT nome FROM clientes")
         clientes = [x[0] for x in c.fetchall()]
 
@@ -165,10 +171,33 @@ def index():
         ranking=ranking,
         operadores=operadores,
         clientes=clientes,
-        operador_filtro=operador_filtro,
         data_inicio=data_inicio,
-        data_fim=data_fim,
-        current_user=current_user
+        data_fim=data_fim
+    )
+
+# ================= GRÁFICO =================
+@app.route("/grafico")
+@login_required
+def grafico():
+
+    valores = [1.99,2.99,4.99,7.99]
+
+    with get_db() as db:
+        c = db.cursor()
+        c.execute("SELECT nivel FROM registros")
+
+        dados = [0,0,0,0]
+        total_valor = 0
+
+        for n in c.fetchall():
+            idx = int(n[0]) - 1
+            dados[idx] += 1
+            total_valor += valores[idx]
+
+    return render_template("grafico.html",
+        dados=dados,
+        valores=valores,
+        total_valor=round(total_valor,2)
     )
 
 # ================= RUN =================
