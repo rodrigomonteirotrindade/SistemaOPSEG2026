@@ -1,114 +1,82 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 import pandas as pd
 import os
 
+# LOGIN
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
+
 app = Flask(__name__)
+app.secret_key = "segredo123"  # pode trocar depois
 
-ARQUIVO_EXCEL = "registros.xlsx"
+# CONFIG LOGIN
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 
-# CRIAR PLANILHA AUTOMÁTICA
-if not os.path.exists(ARQUIVO_EXCEL):
+# USUÁRIO FIXO
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
 
-    df = pd.DataFrame(columns=[
-        "Data",
-        "Cliente",
-        "Titulo",
-        "Colaborador",
-        "Pontuacao",
-        "OPSEG"
-    ])
+users = {
+    "liderseg": {"password": "evt123456"}
+}
 
-    df.to_excel(ARQUIVO_EXCEL, index=False)
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id)
 
-@app.route("/", methods=["GET", "POST"])
-def dashboard():
+# ARQUIVO EXCEL
+arquivo = "registros.xlsx"
 
-    # SALVAR REGISTRO
+# CRIA EXCEL SE NÃO EXISTIR
+if not os.path.exists(arquivo):
+    df = pd.DataFrame(columns=["Data", "Cliente", "Colaborador"])
+    df.to_excel(arquivo, index=False)
+
+# LOGIN
+@app.route("/login", methods=["GET", "POST"])
+def login():
     if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
 
-        novo_registro = {
+        if username in users and users[username]["password"] == password:
+            user = User(username)
+            login_user(user)
+            return redirect(url_for("index"))
 
-            "Data": request.form["data"],
-            "Cliente": request.form["cliente"],
-            "Titulo": request.form["titulo"],
-            "Colaborador": request.form["colaborador"],
-            "Pontuacao": request.form["pontuacao"],
-            "OPSEG": request.form["opseg"]
+    return render_template("login.html")
 
-        }
+# LOGOUT
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
 
-        df = pd.read_excel(ARQUIVO_EXCEL)
+# TELA PRINCIPAL (PROTEGIDA)
+@app.route("/", methods=["GET", "POST"])
+@login_required
+def index():
+    if request.method == "POST":
+        data = request.form["data"]
+        cliente = request.form["cliente"]
+        colaborador = request.form["colaborador"]
 
-        df = pd.concat(
-            [df, pd.DataFrame([novo_registro])],
-            ignore_index=True
-        )
-
-        df.to_excel(ARQUIVO_EXCEL, index=False)
+        df = pd.read_excel(arquivo)
+        novo = pd.DataFrame([[data, cliente, colaborador]], columns=df.columns)
+        df = pd.concat([df, novo], ignore_index=True)
+        df.to_excel(arquivo, index=False)
 
         return redirect("/")
 
-    # LER DADOS
-    df = pd.read_excel(ARQUIVO_EXCEL)
-
+    df = pd.read_excel(arquivo)
     registros = df.to_dict(orient="records")
 
-    # DASHBOARD
+    return render_template("index.html", registros=registros)
 
-    total_registros = len(df)
-
-    media_pontuacao = 0
-
-    if not df.empty:
-
-        try:
-            media_pontuacao = round(
-                pd.to_numeric(df["Pontuacao"]).mean(),
-                2
-            )
-        except:
-            media_pontuacao = 0
-
-    total_colaboradores = df["Colaborador"].nunique()
-
-    total_opseg = df["OPSEG"].nunique()
-
-    # DADOS DO GRÁFICO
-
-    grafico = (
-        df.groupby("Colaborador")["Pontuacao"]
-        .mean()
-        .fillna(0)
-    )
-
-    labels = list(grafico.index)
-
-    valores = [
-        round(float(v), 2)
-        for v in grafico.values
-    ]
-
-    return render_template(
-
-        "index.html",
-
-        registros=registros,
-
-        total_registros=total_registros,
-
-        media_pontuacao=media_pontuacao,
-
-        total_colaboradores=total_colaboradores,
-
-        total_opseg=total_opseg,
-
-        labels=labels,
-
-        valores=valores
-
-    )
-
+# RENDER (PORTA CORRETA)
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
