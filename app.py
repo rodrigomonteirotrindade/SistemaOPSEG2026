@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect
 import pandas as pd
 import os
 
@@ -6,7 +6,7 @@ import os
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
 
 app = Flask(__name__)
-app.secret_key = "segredo123"  # pode trocar depois
+app.secret_key = "segredo123"
 
 # CONFIG LOGIN
 login_manager = LoginManager()
@@ -29,7 +29,6 @@ def load_user(user_id):
 # ARQUIVO EXCEL
 arquivo = "registros.xlsx"
 
-# CRIA EXCEL SE NÃO EXISTIR
 if not os.path.exists(arquivo):
     df = pd.DataFrame(columns=["Data", "Cliente", "Colaborador"])
     df.to_excel(arquivo, index=False)
@@ -44,7 +43,7 @@ def login():
         if username in users and users[username]["password"] == password:
             user = User(username)
             login_user(user)
-            return redirect(url_for("index"))
+            return redirect("/")  # IMPORTANTE
 
     return render_template("login.html")
 
@@ -53,9 +52,9 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for("login"))
+    return redirect("/login")
 
-# TELA PRINCIPAL (PROTEGIDA)
+# TELA PRINCIPAL
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
@@ -76,8 +75,7 @@ def index():
 
     return render_template("index.html", registros=registros)
 
-# RENDER (PORTA CORRETA)
+# RENDER
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-# login ativado
