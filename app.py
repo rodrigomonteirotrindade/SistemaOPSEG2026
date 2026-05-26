@@ -1,143 +1,117 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Sistema OPSEG</title>
+from flask import Flask, render_template, request, redirect
+import pandas as pd
+import os
 
-    <style>
-        body {
-            font-family: Arial;
-            background-color: #f4f6f8;
-            padding: 20px;
-        }
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
-        h2 {
-            color: #333;
-        }
+app = Flask(__name__)
+app.secret_key = "segredo123"
 
-        h3 {
-            margin-top: 20px;
-        }
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 
-        form {
-            background: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            width: 300px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
+# ================= USUÁRIOS =================
+users = {
+    "liderseg": {"password": "evt123456", "tipo": "admin"},
+    "operador1": {"password": "123", "tipo": "operador"}
+}
 
-        input {
-            width: 95%;
-            padding: 8px;
-            margin-bottom: 10px;
-        }
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+        self.tipo = users[id]["tipo"]
 
-        button {
-            padding: 10px;
-            background: #007BFF;
-            color: white;
-            border: none;
-            width: 100%;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id)
 
-        button:hover {
-            background: #0056b3;
-        }
+# ================= EXCEL =================
+arquivo = "registros.xlsx"
 
-        table {
-            margin-top: 20px;
-            border-collapse: collapse;
-            width: 100%;
-            background: white;
-        }
+if not os.path.exists(arquivo):
+    df = pd.DataFrame(columns=["Data", "Cliente", "Colaborador", "Nivel"])
+    df.to_excel(arquivo, index=False)
 
-        table, th, td {
-            border: 1px solid #ccc;
-        }
+# ================= LOGIN =================
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        user = request.form["username"]
+        senha = request.form["password"]
 
-        th {
-            background: #007BFF;
-            color: white;
-        }
+        if user in users and users[user]["password"] == senha:
+            login_user(User(user))
+            return redirect("/")
 
-        th, td {
-            padding: 10px;
-            text-align: center;
-        }
+    return render_template("login.html")
 
-        .topo {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect("/login")
 
-        .logout {
-            text-decoration: none;
-            background: red;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 5px;
-        }
+# ================= CADASTRO USUÁRIO =================
+@app.route("/criar_usuario", methods=["GET", "POST"])
+@login_required
+def criar_usuario():
+    if current_user.tipo != "admin":
+        return "Acesso negado"
 
-        .logout:hover {
-            background: darkred;
-        }
+    if request.method == "POST":
+        u = request.form["usuario"]
+        s = request.form["senha"]
+        t = request.form["tipo"]
 
-        .delete {
-            background: red;
-            color: white;
-            padding: 5px 8px;
-            text-decoration: none;
-            border-radius: 4px;
-        }
+        users[u] = {"password": s, "tipo": t}
+        return redirect("/")
 
-        .delete:hover {
-            background: darkred;
-        }
-    </style>
-</head>
+    return render_template("criar_usuario.html")
 
-<body>
+# ================= DELETE =================
+@app.route("/delete/<int:id>")
+@login_required
+def delete(id):
+    df = pd.read_excel(arquivo)
+    df = df.drop(id)
+    df.to_excel(arquivo, index=False)
+    return redirect("/")
 
-<div class="topo">
-    <h2>Sistema OPSEG</h2>
-    <a href="/logout" class="logout">Sair</a>
-</div>
+# ================= GRÁFICO =================
+@app.route("/grafico")
+@login_required
+def grafico():
+    df = pd.read_excel(arquivo)
 
-<h3>Cadastro</h3>
+    dados = df["Nivel"].value_counts().to_dict()
 
-<form method="POST">
-    <input type="date" name="data" required>
-    <input type="text" name="cliente" placeholder="Cliente" required>
-    <input type="text" name="colaborador" placeholder="Colaborador" required>
-    <button type="submit">Salvar</button>
-</form>
+    return render_template("grafico.html", dados=dados)
 
-<h3>Registros</h3>
+# ================= HOME =================
+@app.route("/", methods=["GET", "POST"])
+@login_required
+def index():
 
-<table>
-    <tr>
-        <th>#</th>
-        <th>Data</th>
-        <th>Cliente</th>
-        <th>Colaborador</th>
-        <th>Ação</th>
-    </tr>
+    if request.method == "POST":
+        data = request.form["data"]
+        cliente = request.form["cliente"]
+        colaborador = request.form["colaborador"]
+        nivel = request.form["nivel"]
 
-    {% for r in registros %}
-    <tr>
-        <td>{{ loop.index0 }}</td>
-        <td>{{ r["Data"] }}</td>
-        <td>{{ r["Cliente"] }}</td>
-        <td>{{ r["Colaborador"] }}</td>
-        <td>
-            <a href="/delete/{{ loop.index0 }}" class="delete">Excluir</a>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+        df = pd.read_excel(arquivo)
+        novo = pd.DataFrame([[data, cliente, colaborador, nivel]], columns=df.columns)
+        df = pd.concat([df, novo], ignore_index=True)
+        df.to_excel(arquivo, index=False)
 
-</body>
-</html>
+        return redirect("/")
+
+    df = pd.read_excel(arquivo)
+    registros = df.to_dict(orient="records")
+
+    return render_template("index.html", registros=registros, tipo=current_user.tipo)
+
+# ================= RENDER =================
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)

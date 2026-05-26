@@ -1,0 +1,17 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<canvas id="grafico"></canvas>
+
+<script>
+const dados = {{ dados | tojson }};
+
+new Chart(document.getElementById("grafico"), {
+    type: 'pie',
+    data: {
+        labels: Object.keys(dados),
+        datasets: [{
+            data: Object.values(dados)
+        }]
+    }
+});
+</script>
