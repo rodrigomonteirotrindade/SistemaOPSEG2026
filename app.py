@@ -83,7 +83,7 @@ def logout():
     logout_user()
     return redirect("/login")
 
-# ================= DASHBOARD =================
+# ================= INDEX =================
 @app.route("/", methods=["GET","POST"])
 @login_required
 def index():
@@ -105,9 +105,16 @@ def index():
         ))
         conn.commit()
 
+    # DADOS
     c.execute("SELECT * FROM registros ORDER BY id DESC")
     registros = c.fetchall()
 
+    c.execute("SELECT nome FROM clientes")
+    clientes = [x["nome"] for x in c.fetchall()]
+
+    conn.close()
+
+    # CONTADORES
     total = len(registros)
     n1 = len([r for r in registros if r["nivel"]=="1"])
     n2 = len([r for r in registros if r["nivel"]=="2"])
@@ -116,18 +123,12 @@ def index():
 
     total_valor = n1*1.99 + n2*2.99 + n3*4.99 + n4*7.99
 
-    # CLIENTES
-    c.execute("SELECT nome FROM clientes")
-    clientes = [x["nome"] for x in c.fetchall()]
-
-    conn.close()
-
     return render_template("index.html",
         registros=registros,
+        clientes=clientes,
         total=total,
         n1=n1,n2=n2,n3=n3,n4=n4,
-        total_valor=round(total_valor,2),
-        clientes=clientes
+        total_valor=round(total_valor,2)
     )
 
 # ================= EXCLUIR =================

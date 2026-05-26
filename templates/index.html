@@ -1,31 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <title>Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {margin:0;font-family:Arial;background:#0f172a;color:white;display:flex;}
-.sidebar {width:220px;background:#020617;padding:20px;height:100vh;position:fixed;}
-.sidebar a {display:block;color:#cbd5f5;margin:10px 0;padding:10px;text-decoration:none;}
-.main {margin-left:240px;padding:20px;width:100%;}
-
-.cards {display:flex;gap:10px;margin-bottom:20px;}
-.card {flex:1;padding:15px;border-radius:10px;text-align:center;}
-.total{background:#3b82f6;}
-.n1{background:#22c55e;}
-.n2{background:#eab308;}
-.n3{background:#f97316;}
-.n4{background:#ef4444;}
-
-.box {background:#1e293b;padding:20px;border-radius:10px;margin-bottom:20px;}
-
-table {width:100%;border-collapse:collapse;}
-th,td {padding:10px;text-align:center;}
-th {background:#334155;}
-
-button {padding:10px;background:#3b82f6;color:white;border:none;border-radius:5px;}
-input,select {padding:8px;margin:5px;border-radius:5px;border:none;}
+body { margin:0; font-family:Arial; display:flex; }
+.sidebar {
+    width:220px;
+    background:#0f172a;
+    color:white;
+    height:100vh;
+    padding:20px;
+}
+.sidebar a {
+    display:block;
+    color:white;
+    margin:10px 0;
+    text-decoration:none;
+}
+.content {
+    flex:1;
+    padding:20px;
+    background:#f1f5f9;
+}
+.card {
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:15px;
+}
 </style>
 </head>
 
@@ -34,79 +38,47 @@ input,select {padding:8px;margin:5px;border-radius:5px;border:none;}
 <div class="sidebar">
 <h2>OPSEG</h2>
 <a href="/">Dashboard</a>
+<a href="/clientes">Clientes</a>
+<a href="/usuarios">Cadastrar Usuário</a>
 <a href="/logout">Sair</a>
 </div>
 
-<div class="main">
+<div class="content">
 
-<h2>Dashboard</h2>
+<h2>Dashboard Operacional</h2>
 
-<!-- FILTRO -->
-<div class="box">
-<form method="GET">
-
-<select name="operador">
-<option value="todos">Todos</option>
-{% for op in operadores %}
-<option value="{{ op }}">{{ op }}</option>
-{% endfor %}
-</select>
-
-<br>
-
-<input type="date" name="data_inicio" value="{{ data_inicio }}">
-<input type="date" name="data_fim" value="{{ data_fim }}">
-
-<br><br>
-
-<button>Filtrar</button>
-
-</form>
+<div class="card">
+Total: {{ total }} |
+N1: {{ n1 }} |
+N2: {{ n2 }} |
+N3: {{ n3 }} |
+N4: {{ n4 }} |
+💰 R$: {{ total_valor }}
 </div>
 
-<!-- CARDS -->
-<div class="cards">
-<div class="card total">Total<br>{{ total }}</div>
-<div class="card n1">N1<br>{{ n1 }}</div>
-<div class="card n2">N2<br>{{ n2 }}</div>
-<div class="card n3">N3<br>{{ n3 }}</div>
-<div class="card n4">N4<br>{{ n4 }}</div>
-</div>
-
-<!-- GRÁFICO -->
-<div class="box" style="width:350px;">
-<canvas id="grafico"></canvas>
-<h3>Total R$ {{ total_valor }}</h3>
-</div>
-
-<!-- RANKING -->
-<div class="box">
-<h3>Ranking</h3>
-{% for r in ranking %}
-<p>{{ r[0] }} - {{ r[1] }}</p>
-{% endfor %}
-</div>
-
-<!-- FORM -->
-<div class="box">
+<!-- FORM CORRIGIDO -->
+<div class="card">
 <form method="POST">
 
 <input type="date" name="data" required>
-<input name="titulo" placeholder="Título" required>
 
-<select name="cliente">
+<input name="titulo" placeholder="Título do trabalho" required>
+
+<!-- CLIENTE AGORA FUNCIONANDO -->
+<select name="cliente" required>
+<option value="">Selecione o cliente</option>
 {% for c in clientes %}
 <option value="{{ c }}">{{ c }}</option>
 {% endfor %}
 </select>
 
-<input name="colaborador" placeholder="Operador" required>
+<input name="colaborador" placeholder="Colaborador" required>
 
 <select name="nivel">
-<option value="1">N1</option>
-<option value="2">N2</option>
-<option value="3">N3</option>
-<option value="4">N4</option>
+<option value="1">Nível 1</option>
+<option value="2">Nível 2</option>
+<option value="3">Nível 3</option>
+<option value="4">Nível 4</option>
 </select>
 
 <button>Salvar</button>
@@ -114,26 +86,27 @@ input,select {padding:8px;margin:5px;border-radius:5px;border:none;}
 </form>
 </div>
 
-<!-- TABELA -->
-<div class="box">
-<table>
+<div class="card">
+<table border="1" width="100%">
 <tr>
+<th>ID</th>
 <th>Data</th>
 <th>Título</th>
 <th>Cliente</th>
-<th>Operador</th>
+<th>Colaborador</th>
 <th>Nível</th>
 <th>Ação</th>
 </tr>
 
 {% for r in registros %}
 <tr>
-<td>{{ r[1] }}</td>
-<td>{{ r[2] }}</td>
-<td>{{ r[3] }}</td>
-<td>{{ r[4] }}</td>
-<td>{{ r[5] }}</td>
-<td><a href="/excluir/{{ r[0] }}" style="color:red;">Excluir</a></td>
+<td>{{ r["id"] }}</td>
+<td>{{ r["data"] }}</td>
+<td>{{ r["titulo"] }}</td>
+<td>{{ r["cliente"] }}</td>
+<td>{{ r["colaborador"] }}</td>
+<td>{{ r["nivel"] }}</td>
+<td><a href="/excluir/{{ r['id'] }}">Excluir</a></td>
 </tr>
 {% endfor %}
 
@@ -141,19 +114,5 @@ input,select {padding:8px;margin:5px;border-radius:5px;border:none;}
 </div>
 
 </div>
-
-<script>
-new Chart(document.getElementById("grafico"), {
-type: 'doughnut',
-data: {
-labels: ["N1","N2","N3","N4"],
-datasets: [{
-data: [{{ n1 }},{{ n2 }},{{ n3 }},{{ n4 }}],
-backgroundColor: ["green","yellow","orange","red"]
-}]
-}
-});
-</script>
-
 </body>
 </html>
