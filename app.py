@@ -11,7 +11,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-# ================= USUÁRIOS =================
+# USERS
 users = {
     "liderseg": {"password": "evt123456", "tipo": "admin"},
     "operador1": {"password": "123", "tipo": "operador"}
@@ -26,14 +26,26 @@ class User(UserMixin):
 def load_user(user_id):
     return User(user_id)
 
-# ================= EXCEL =================
 arquivo = "registros.xlsx"
 
+# GARANTE COLUNAS CORRETAS
+colunas = ["Data", "Cliente", "Colaborador", "Nivel"]
+
 if not os.path.exists(arquivo):
-    df = pd.DataFrame(columns=["Data", "Cliente", "Colaborador", "Nivel"])
+    df = pd.DataFrame(columns=colunas)
+    df.to_excel(arquivo, index=False)
+else:
+    df = pd.read_excel(arquivo)
+
+    # adiciona coluna se não existir
+    for c in colunas:
+        if c not in df.columns:
+            df[c] = ""
+
+    df = df[colunas]
     df.to_excel(arquivo, index=False)
 
-# ================= LOGIN =================
+# LOGIN
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -52,24 +64,7 @@ def logout():
     logout_user()
     return redirect("/login")
 
-# ================= CADASTRO USUÁRIO =================
-@app.route("/criar_usuario", methods=["GET", "POST"])
-@login_required
-def criar_usuario():
-    if current_user.tipo != "admin":
-        return "Acesso negado"
-
-    if request.method == "POST":
-        u = request.form["usuario"]
-        s = request.form["senha"]
-        t = request.form["tipo"]
-
-        users[u] = {"password": s, "tipo": t}
-        return redirect("/")
-
-    return render_template("criar_usuario.html")
-
-# ================= DELETE =================
+# DELETE
 @app.route("/delete/<int:id>")
 @login_required
 def delete(id):
@@ -78,17 +73,7 @@ def delete(id):
     df.to_excel(arquivo, index=False)
     return redirect("/")
 
-# ================= GRÁFICO =================
-@app.route("/grafico")
-@login_required
-def grafico():
-    df = pd.read_excel(arquivo)
-
-    dados = df["Nivel"].value_counts().to_dict()
-
-    return render_template("grafico.html", dados=dados)
-
-# ================= HOME =================
+# HOME
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
@@ -111,7 +96,7 @@ def index():
 
     return render_template("index.html", registros=registros, tipo=current_user.tipo)
 
-# ================= RENDER =================
+# RENDER
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
