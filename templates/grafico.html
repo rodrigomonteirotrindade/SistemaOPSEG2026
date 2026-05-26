@@ -1,6 +1,13 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<h2>Gráfico por Operador</h2>
+<style>
+body {font-family:Arial;background:#f1f5f9;padding:20px;}
+.container {background:white;padding:20px;border-radius:10px;}
+</style>
+
+<div class="container">
+
+<h2>Gráfico Operacional</h2>
 
 <form method="GET">
 <select name="operador">
@@ -16,9 +23,10 @@
 <button>Filtrar</button>
 </form>
 
-<!-- 🔥 TAMANHO CONTROLADO -->
-<div style="width:400px;">
+<div style="width:300px; margin:auto;">
 <canvas id="grafico"></canvas>
+</div>
+
 </div>
 
 <script>
@@ -29,13 +37,9 @@ type: 'pie',
 data: {
 labels: ["N1","N2","N3","N4"],
 datasets: [{
-data: dados,
-backgroundColor: ["green","yellow","orange","red"]
+data: [dados["1"], dados["2"], dados["3"], dados["4"]],
+backgroundColor: ["#22c55e","#eab308","#f97316","#ef4444"]
 }]
-},
-options: {
-responsive: true,
-maintainAspectRatio: true
 }
 });
 </script>

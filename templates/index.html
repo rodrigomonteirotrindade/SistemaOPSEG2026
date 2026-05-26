@@ -1,6 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>OPSEG</title>
+
+<style>
+body {
+    margin:0;
+    font-family:Arial;
+    display:flex;
+    background:#f1f5f9;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width:220px;
+    background:#0f172a;
+    color:white;
+    height:100vh;
+    padding:20px;
+    position:fixed;
+}
+
+.sidebar h2 {
+    margin-bottom:20px;
+}
+
+.sidebar a {
+    display:block;
+    color:white;
+    margin:10px 0;
+    text-decoration:none;
+    padding:10px;
+    border-radius:6px;
+}
+
+.sidebar a:hover {
+    background:#1e293b;
+}
+
+/* MAIN */
+.main {
+    margin-left:240px;
+    padding:20px;
+    width:100%;
+}
+
+/* TOPBAR */
+.topbar {
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+    display:flex;
+    justify-content:space-between;
+}
+
+/* CARDS */
+.cards {
+    display:flex;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.card {
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    flex:1;
+    text-align:center;
+    font-size:18px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* FORM */
+form {
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+form input, form select, form button {
+    padding:10px;
+    margin:5px;
+}
+
+/* TABLE */
+table {
+    width:100%;
+    background:white;
+    border-collapse:collapse;
+}
+
+th, td {
+    padding:10px;
+    border-bottom:1px solid #ddd;
+    text-align:center;
+}
+
+th {
+    background:#2563eb;
+    color:white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<h2>OPSEG</h2>
+<a href="/">Dashboard</a>
+<a href="/grafico">Gráficos</a>
+<a href="/criar_usuario">Cadastrar Usuário</a>
+<a href="/logout">Sair</a>
+</div>
+
+<div class="main">
+
+<div class="topbar">
+<h3>Dashboard Operacional</h3>
+<span>Usuário: {{ current_user.id }}</span>
+</div>
+
+<div class="cards">
+<div class="card">Total<br><b>{{ total }}</b></div>
+<div class="card">N1<br><b>{{ n1 }}</b></div>
+<div class="card">N2<br><b>{{ n2 }}</b></div>
+<div class="card">N3<br><b>{{ n3 }}</b></div>
+<div class="card">N4<br><b>{{ n4 }}</b></div>
+</div>
+
 <form method="POST">
 
 <input type="date" name="data" required>
+
+<input name="titulo" placeholder="Título do trabalho" required>
 
 <select name="cliente">
 <option>Acy Andrade</option>
@@ -8,9 +142,6 @@
 </select>
 
 <input name="colaborador" placeholder="Colaborador" required>
-
-<!-- 🔥 NOVO CAMPO -->
-<input name="titulo" placeholder="Título do trabalho" required>
 
 <select name="nivel">
 <option value="1">1</option>
@@ -25,9 +156,9 @@
 <table>
 <tr>
 <th>Data</th>
+<th>Título</th>
 <th>Cliente</th>
 <th>Colaborador</th>
-<th>Título</th>
 <th>Nível</th>
 <th>Ação</th>
 </tr>
@@ -35,11 +166,15 @@
 {% for r in registros %}
 <tr>
 <td>{{ r["Data"] }}</td>
+<td>{{ r["Titulo"] }}</td>
 <td>{{ r["Cliente"] }}</td>
 <td>{{ r["Colaborador"] }}</td>
-<td>{{ r["Titulo"] }}</td>
 <td>{{ r["Nivel"] }}</td>
 <td><a href="/delete/{{ loop.index0 }}">Excluir</a></td>
 </tr>
 {% endfor %}
 </table>
+
+</div>
+</body>
+</html>
