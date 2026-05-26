@@ -1,5 +1,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<h2>Gráfico</h2>
+
 <canvas id="grafico"></canvas>
 
 <script>
@@ -8,9 +10,9 @@ const dados = {{ dados | tojson }};
 new Chart(document.getElementById("grafico"), {
     type: 'pie',
     data: {
-        labels: Object.keys(dados),
+        labels: ["N1","N2","N3","N4"],
         datasets: [{
-            data: Object.values(dados)
+            data: [dados["1"], dados["2"], dados["3"], dados["4"]]
         }]
     }
 });

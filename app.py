@@ -11,7 +11,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-# USERS
+# ================= USUÁRIOS =================
 users = {
     "liderseg": {"password": "evt123456", "tipo": "admin"},
     "operador1": {"password": "123", "tipo": "operador"}
@@ -26,9 +26,8 @@ class User(UserMixin):
 def load_user(user_id):
     return User(user_id)
 
+# ================= EXCEL =================
 arquivo = "registros.xlsx"
-
-# GARANTE COLUNAS CORRETAS
 colunas = ["Data", "Cliente", "Colaborador", "Nivel"]
 
 if not os.path.exists(arquivo):
@@ -36,16 +35,13 @@ if not os.path.exists(arquivo):
     df.to_excel(arquivo, index=False)
 else:
     df = pd.read_excel(arquivo)
-
-    # adiciona coluna se não existir
     for c in colunas:
         if c not in df.columns:
             df[c] = ""
-
     df = df[colunas]
     df.to_excel(arquivo, index=False)
 
-# LOGIN
+# ================= LOGIN =================
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -64,16 +60,53 @@ def logout():
     logout_user()
     return redirect("/login")
 
-# DELETE
+# ================= CRIAR USUÁRIO =================
+@app.route("/criar_usuario", methods=["GET", "POST"])
+@login_required
+def criar_usuario():
+    if current_user.tipo != "admin":
+        return redirect("/")
+
+    if request.method == "POST":
+        u = request.form["usuario"]
+        s = request.form["senha"]
+        t = request.form["tipo"]
+
+        users[u] = {"password": s, "tipo": t}
+        return redirect("/")
+
+    return render_template("criar_usuario.html")
+
+# ================= DELETE =================
 @app.route("/delete/<int:id>")
 @login_required
 def delete(id):
     df = pd.read_excel(arquivo)
-    df = df.drop(id)
-    df.to_excel(arquivo, index=False)
+    if id < len(df):
+        df = df.drop(id)
+        df.to_excel(arquivo, index=False)
     return redirect("/")
 
-# HOME
+# ================= GRÁFICO =================
+@app.route("/grafico")
+@login_required
+def grafico():
+    df = pd.read_excel(arquivo)
+
+    if df.empty:
+        dados = {"1":0,"2":0,"3":0,"4":0}
+    else:
+        contagem = df["Nivel"].value_counts().to_dict()
+        dados = {
+            "1": contagem.get("1", 0),
+            "2": contagem.get("2", 0),
+            "3": contagem.get("3", 0),
+            "4": contagem.get("4", 0)
+        }
+
+    return render_template("grafico.html", dados=dados)
+
+# ================= HOME =================
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
@@ -94,9 +127,25 @@ def index():
     df = pd.read_excel(arquivo)
     registros = df.to_dict(orient="records")
 
-    return render_template("index.html", registros=registros, tipo=current_user.tipo)
+    # DASHBOARD CONTADORES
+    total = len(registros)
+    n1 = len([r for r in registros if r["Nivel"] == "1"])
+    n2 = len([r for r in registros if r["Nivel"] == "2"])
+    n3 = len([r for r in registros if r["Nivel"] == "3"])
+    n4 = len([r for r in registros if r["Nivel"] == "4"])
 
-# RENDER
+    return render_template(
+        "index.html",
+        registros=registros,
+        tipo=current_user.tipo,
+        total=total,
+        n1=n1,
+        n2=n2,
+        n3=n3,
+        n4=n4
+    )
+
+# ================= RENDER =================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)

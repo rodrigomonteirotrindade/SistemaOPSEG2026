@@ -1,227 +1,84 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sistema OPSEG</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>OPSEG</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial;
-            display: flex;
-        }
-
-        /* MENU LATERAL */
-        .sidebar {
-            width: 220px;
-            background: #1e293b;
-            color: white;
-            height: 100vh;
-            padding: 20px;
-        }
-
-        .sidebar h2 {
-            margin-bottom: 30px;
-        }
-
-        .sidebar a {
-            display: block;
-            color: white;
-            text-decoration: none;
-            margin: 10px 0;
-        }
-
-        /* CONTEÚDO */
-        .main {
-            flex: 1;
-            padding: 20px;
-            background: #f1f5f9;
-        }
-
-        /* CARDS */
-        .cards {
-            display: flex;
-            gap: 15px;
-        }
-
-        .card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            flex: 1;
-            text-align: center;
-        }
-
-        /* FORM */
-        .form-box {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-        }
-
-        button {
-            background: #2563eb;
-            color: white;
-            padding: 10px;
-            border: none;
-            width: 100%;
-            border-radius: 5px;
-        }
-
-        /* TABELA */
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-            background: white;
-        }
-
-        th {
-            background: #2563eb;
-            color: white;
-        }
-
-        th, td {
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #ddd;
-        }
-
-        .delete {
-            color: red;
-            text-decoration: none;
-        }
-    </style>
+<style>
+body {margin:0;font-family:Arial;display:flex;}
+.sidebar {width:220px;background:#1e293b;color:white;height:100vh;padding:20px;}
+.sidebar a {display:block;color:white;margin:10px 0;text-decoration:none;}
+.main {flex:1;padding:20px;background:#f1f5f9;}
+.cards {display:flex;gap:10px;}
+.card {background:white;padding:15px;border-radius:8px;flex:1;text-align:center;}
+table {width:100%;margin-top:20px;background:white;border-collapse:collapse;}
+th,td {padding:10px;border:1px solid #ddd;text-align:center;}
+th {background:#2563eb;color:white;}
+</style>
 </head>
 
 <body>
 
-<!-- MENU -->
 <div class="sidebar">
-    <h2>OPSEG</h2>
-    <a href="/">Dashboard</a>
-    <a href="/grafico">Gráficos</a>
-    <a href="/criar_usuario">Usuários</a>
-    <a href="/logout">Sair</a>
+<h2>OPSEG</h2>
+<a href="/">Dashboard</a>
+<a href="/grafico">Gráfico</a>
+<a href="/criar_usuario">Cadastrar Usuário</a>
+<a href="/logout">Sair</a>
 </div>
 
-<!-- CONTEÚDO -->
 <div class="main">
 
-    <h2>Dashboard</h2>
+<h2>Dashboard</h2>
 
-    <!-- CARDS -->
-    <div class="cards">
-        <div class="card">
-            <h3>{{ registros|length }}</h3>
-            <p>Total Registros</p>
-        </div>
-
-        <div class="card">
-            <h3>{{ registros|selectattr("Nivel","equalto","1")|list|length }}</h3>
-            <p>Nível 1</p>
-        </div>
-
-        <div class="card">
-            <h3>{{ registros|selectattr("Nivel","equalto","2")|list|length }}</h3>
-            <p>Nível 2</p>
-        </div>
-
-        <div class="card">
-            <h3>{{ registros|selectattr("Nivel","equalto","3")|list|length }}</h3>
-            <p>Nível 3</p>
-        </div>
-    </div>
-
-    <!-- FORM -->
-    {% if tipo == "admin" %}
-    <div class="form-box">
-        <h3>Novo Registro</h3>
-
-        <form method="POST">
-            <input type="date" name="data" required>
-
-            <select name="cliente" required>
-                <option value="">Cliente</option>
-                <option>Acy Andrade</option>
-                <option>Atrium 3</option>
-                <option>Outro</option>
-            </select>
-
-            <input type="text" name="colaborador" placeholder="Colaborador" required>
-
-            <select name="nivel" required>
-                <option value="">Nível</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>4</option>
-            </select>
-
-            <button type="submit">Salvar</button>
-        </form>
-    </div>
-    {% endif %}
-
-    <!-- TABELA -->
-    <h3>Registros</h3>
-
-    <table>
-        <tr>
-            <th>Data</th>
-            <th>Cliente</th>
-            <th>Colaborador</th>
-            <th>Nível</th>
-            <th>Ação</th>
-        </tr>
-
-        {% for r in registros %}
-        <tr>
-            <td>{{ r["Data"] }}</td>
-            <td>{{ r["Cliente"] }}</td>
-            <td>{{ r["Colaborador"] }}</td>
-            <td>{{ r["Nivel"] }}</td>
-            <td>
-                {% if tipo == "admin" %}
-                <a href="/delete/{{ loop.index0 }}" class="delete">Excluir</a>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-
-    <!-- GRÁFICO -->
-    <h3>Distribuição por Nível</h3>
-    <canvas id="grafico"></canvas>
-
+<div class="cards">
+<div class="card"><h3>{{ total }}</h3><p>Total</p></div>
+<div class="card"><h3>{{ n1 }}</h3><p>Nível 1</p></div>
+<div class="card"><h3>{{ n2 }}</h3><p>Nível 2</p></div>
+<div class="card"><h3>{{ n3 }}</h3><p>Nível 3</p></div>
+<div class="card"><h3>{{ n4 }}</h3><p>Nível 4</p></div>
 </div>
 
-<script>
-const dados = {{ registros | tojson }};
+{% if tipo == "admin" %}
+<form method="POST">
+<input type="date" name="data" required>
 
-let niveis = {1:0,2:0,3:0,4:0};
+<select name="cliente">
+<option>Acy Andrade</option>
+<option>Atrium 3</option>
+</select>
 
-dados.forEach(r => {
-    niveis[r.Nivel]++
-});
+<input name="colaborador" placeholder="Colaborador">
 
-new Chart(document.getElementById("grafico"), {
-    type: 'pie',
-    data: {
-        labels: ["N1","N2","N3","N4"],
-        datasets: [{
-            data: [niveis[1], niveis[2], niveis[3], niveis[4]]
-        }]
-    }
-});
-</script>
+<select name="nivel">
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+</select>
 
+<button>Salvar</button>
+</form>
+{% endif %}
+
+<table>
+<tr>
+<th>Data</th>
+<th>Cliente</th>
+<th>Colaborador</th>
+<th>Nível</th>
+</tr>
+
+{% for r in registros %}
+<tr>
+<td>{{ r["Data"] }}</td>
+<td>{{ r["Cliente"] }}</td>
+<td>{{ r["Colaborador"] }}</td>
+<td>{{ r["Nivel"] }}</td>
+</tr>
+{% endfor %}
+</table>
+
+</div>
 </body>
 </html>
