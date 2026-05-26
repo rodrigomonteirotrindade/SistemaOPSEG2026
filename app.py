@@ -1,9 +1,12 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, send_file
 import sqlite3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_bcrypt import Bcrypt
+from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 app.secret_key = "segredo123"
+bcrypt = Bcrypt(app)
 
 # ================= BANCO =================
 def get_db():
@@ -38,8 +41,9 @@ def criar_banco():
     )
     """)
 
-    # 🔥 LOGIN CORRIGIDO
-    c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','evt123456','admin')")
+    # LOGIN PADRÃO CRIPTOGRAFADO
+    senha_hash = bcrypt.generate_password_hash("evt123456").decode('utf-8')
+    c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg', ?, 'admin')", (senha_hash,))
 
     db.commit()
     db.close()
@@ -77,11 +81,11 @@ def login():
 
         db = get_db()
         c = db.cursor()
-        c.execute("SELECT * FROM usuarios WHERE username=? AND password=?", (u,s))
+        c.execute("SELECT * FROM usuarios WHERE username=?", (u,))
         user = c.fetchone()
         db.close()
 
-        if user:
+        if user and bcrypt.check_password_hash(user[1], s):
             login_user(User(user[0], user[2]))
             return redirect("/")
 
@@ -102,38 +106,39 @@ def index():
     c = db.cursor()
 
     if request.method == "POST":
-        try:
-            c.execute("""
-            INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
-            VALUES (?,?,?,?,?)
-            """, (
-                request.form["data"],
-                request.form["titulo"],
-                request.form["cliente"],
-                request.form["colaborador"],
-                request.form["nivel"]
-            ))
-            db.commit()
-        except Exception as e:
-            print("ERRO AO SALVAR:", e)
-
+        c.execute("""
+        INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
+        VALUES (?,?,?,?,?)
+        """, (
+            request.form["data"],
+            request.form["titulo"],
+            request.form["cliente"],
+            request.form["colaborador"],
+            request.form["nivel"]
+        ))
+        db.commit()
         return redirect("/")
 
-    c.execute("SELECT * FROM registros ORDER BY id DESC")
+    c.execute("SELECT * FROM registros")
     registros = c.fetchall()
 
-    c.execute("SELECT COUNT(*) FROM registros")
-    total = c.fetchone()[0]
+    total = len(registros)
 
+    # CONTADORES
     def count(n):
-        c.execute("SELECT COUNT(*) FROM registros WHERE nivel=?", (n,))
-        return c.fetchone()[0]
+        return len([r for r in registros if r[5] == n])
 
     n1, n2, n3, n4 = count("1"), count("2"), count("3"), count("4")
 
-    c.execute("SELECT DISTINCT colaborador FROM registros")
-    operadores = [x[0] for x in c.fetchall() if x[0]]
+    # RANKING OPERADOR
+    ranking = {}
+    for r in registros:
+        op = r[4]
+        ranking[op] = ranking.get(op, 0) + 1
 
+    ranking = sorted(ranking.items(), key=lambda x: x[1], reverse=True)
+
+    # CLIENTES
     c.execute("SELECT nome FROM clientes")
     clientes = [x[0] for x in c.fetchall()]
 
@@ -142,48 +147,23 @@ def index():
     return render_template("index.html",
         registros=registros,
         total=total,n1=n1,n2=n2,n3=n3,n4=n4,
-        operadores=operadores,
+        ranking=ranking,
         clientes=clientes,
         current_user=current_user
     )
-
-# ================= EDITAR NIVEL =================
-@app.route("/editar/<int:id>", methods=["POST"])
-@login_required
-def editar(id):
-    novo = request.form["nivel"]
-
-    db = get_db()
-    c = db.cursor()
-    c.execute("UPDATE registros SET nivel=? WHERE id=?", (novo,id))
-    db.commit()
-    db.close()
-
-    return redirect("/")
-
-# ================= DELETE =================
-@app.route("/delete/<int:id>")
-@login_required
-def delete(id):
-    db = get_db()
-    c = db.cursor()
-    c.execute("DELETE FROM registros WHERE id=?", (id,))
-    db.commit()
-    db.close()
-    return redirect("/")
 
 # ================= GRÁFICO =================
 @app.route("/grafico")
 @login_required
 def grafico():
 
-    operador = request.args.get("operador")
+    cliente = request.args.get("cliente")
 
     db = get_db()
     c = db.cursor()
 
-    if operador and operador != "todos":
-        c.execute("SELECT nivel FROM registros WHERE colaborador=?", (operador,))
+    if cliente and cliente != "todos":
+        c.execute("SELECT nivel FROM registros WHERE cliente=?", (cliente,))
     else:
         c.execute("SELECT nivel FROM registros")
 
@@ -195,30 +175,33 @@ def grafico():
         if n[0] == "3": dados[2]+=1
         if n[0] == "4": dados[3]+=1
 
-    c.execute("SELECT DISTINCT colaborador FROM registros")
-    operadores = [x[0] for x in c.fetchall() if x[0]]
+    c.execute("SELECT nome FROM clientes")
+    clientes = [x[0] for x in c.fetchall()]
 
     db.close()
 
-    return render_template("grafico.html", dados=dados, operadores=operadores)
+    return render_template("grafico.html", dados=dados, clientes=clientes)
 
 # ================= USUÁRIOS =================
 @app.route("/usuarios", methods=["GET","POST"])
 @login_required
 def usuarios():
+
+    if current_user.tipo != "admin":
+        return redirect("/")
+
     if request.method == "POST":
-        try:
-            db = get_db()
-            c = db.cursor()
-            c.execute("INSERT INTO usuarios VALUES (?,?,?)", (
-                request.form["username"],
-                request.form["password"],
-                request.form["tipo"]
-            ))
-            db.commit()
-            db.close()
-        except:
-            pass
+        senha_hash = bcrypt.generate_password_hash(request.form["password"]).decode('utf-8')
+
+        db = get_db()
+        c = db.cursor()
+        c.execute("INSERT INTO usuarios VALUES (?,?,?)", (
+            request.form["username"],
+            senha_hash,
+            request.form["tipo"]
+        ))
+        db.commit()
+        db.close()
 
         return redirect("/usuarios")
 
@@ -228,21 +211,39 @@ def usuarios():
 @app.route("/clientes", methods=["GET","POST"])
 @login_required
 def clientes():
-    if request.method == "POST":
-        try:
-            db = get_db()
-            c = db.cursor()
-            c.execute("INSERT INTO clientes VALUES (?)", (
-                request.form["nome"],
-            ))
-            db.commit()
-            db.close()
-        except:
-            pass
 
+    if request.method == "POST":
+        db = get_db()
+        c = db.cursor()
+        c.execute("INSERT INTO clientes VALUES (?)", (request.form["nome"],))
+        db.commit()
+        db.close()
         return redirect("/clientes")
 
     return render_template("clientes.html")
+
+# ================= PDF =================
+@app.route("/exportar")
+@login_required
+def exportar():
+
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT * FROM registros")
+    dados = c.fetchall()
+    db.close()
+
+    arquivo = "relatorio.pdf"
+    pdf = canvas.Canvas(arquivo)
+
+    y = 800
+    for r in dados:
+        pdf.drawString(50, y, f"{r}")
+        y -= 20
+
+    pdf.save()
+
+    return send_file(arquivo, as_attachment=True)
 
 # ================= RUN =================
 if __name__ == "__main__":
