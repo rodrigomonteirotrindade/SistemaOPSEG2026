@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect
 import sqlite3
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
 from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
@@ -61,7 +61,6 @@ def load_user(user_id):
         c = db.cursor()
         c.execute("SELECT * FROM usuarios WHERE username=?", (user_id,))
         user = c.fetchone()
-
     if user:
         return User(user[0], user[2])
     return None
@@ -147,11 +146,21 @@ def index():
 
         total = len(registros)
 
+        # CONTAGEM POR NÍVEL
         def count(n):
             return len([r for r in registros if r[5] == n])
 
         n1, n2, n3, n4 = count("1"), count("2"), count("3"), count("4")
 
+        # VALOR TOTAL
+        total_valor = (
+            n1*1.99 +
+            n2*2.99 +
+            n3*4.99 +
+            n4*7.99
+        )
+
+        # RANKING
         ranking = {}
         for r in registros:
             op = r[4]
@@ -159,45 +168,24 @@ def index():
 
         ranking = sorted(ranking.items(), key=lambda x: x[1], reverse=True)
 
+        # OPERADORES
         c.execute("SELECT DISTINCT colaborador FROM registros")
         operadores = [x[0] for x in c.fetchall()]
 
+        # CLIENTES
         c.execute("SELECT nome FROM clientes")
         clientes = [x[0] for x in c.fetchall()]
 
     return render_template("index.html",
         registros=registros,
-        total=total,n1=n1,n2=n2,n3=n3,n4=n4,
+        total=total,
+        n1=n1,n2=n2,n3=n3,n4=n4,
+        total_valor=round(total_valor,2),
         ranking=ranking,
         operadores=operadores,
         clientes=clientes,
         data_inicio=data_inicio,
         data_fim=data_fim
-    )
-
-# ================= GRÁFICO =================
-@app.route("/grafico")
-@login_required
-def grafico():
-
-    valores = [1.99,2.99,4.99,7.99]
-
-    with get_db() as db:
-        c = db.cursor()
-        c.execute("SELECT nivel FROM registros")
-
-        dados = [0,0,0,0]
-        total_valor = 0
-
-        for n in c.fetchall():
-            idx = int(n[0]) - 1
-            dados[idx] += 1
-            total_valor += valores[idx]
-
-    return render_template("grafico.html",
-        dados=dados,
-        valores=valores,
-        total_valor=round(total_valor,2)
     )
 
 # ================= RUN =================
