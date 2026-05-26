@@ -1,3 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>OPSEG</title>
+
+<style>
+body {margin:0;font-family:Arial;display:flex;}
+.sidebar {width:220px;background:#0f172a;color:white;height:100vh;padding:20px;}
+.sidebar a {display:block;color:white;margin:10px 0;text-decoration:none;}
+.main {flex:1;padding:20px;background:#f1f5f9;}
+.cards {display:flex;gap:10px;margin-bottom:20px;}
+.card {background:white;padding:15px;border-radius:10px;flex:1;text-align:center;}
+table {width:100%;background:white;border-collapse:collapse;}
+th,td {padding:10px;border:1px solid #ddd;text-align:center;}
+th {background:#2563eb;color:white;}
+</style>
+
+</head>
+<body>
+
 <div class="sidebar">
 <h2>OPSEG</h2>
 <a href="/">Dashboard</a>
@@ -5,6 +25,8 @@
 <a href="/criar_usuario">Cadastrar Usuário</a>
 <a href="/logout">Sair</a>
 </div>
+
+<div class="main">
 
 <h2>Dashboard</h2>
 
@@ -24,13 +46,13 @@
 <option>Atrium 3</option>
 </select>
 
-<input name="colaborador" placeholder="Colaborador">
+<input name="colaborador" placeholder="Colaborador" required>
 
 <select name="nivel">
-<option>1</option>
-<option>2</option>
-<option>3</option>
-<option>4</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
 </select>
 
 <button>Salvar</button>
@@ -54,4 +76,9 @@
 <td><a href="/delete/{{ loop.index0 }}">Excluir</a></td>
 </tr>
 {% endfor %}
+
 </table>
+
+</div>
+</body>
+</html>
