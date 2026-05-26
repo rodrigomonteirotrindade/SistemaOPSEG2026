@@ -1,22 +1,67 @@
 <!DOCTYPE html>
 <html>
 <head>
+<title>Gráficos</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    margin:0;
+    font-family:Arial;
+    display:flex;
+    background:#f1f5f9;
+}
+
+.sidebar {
+    width:220px;
+    background:#0f172a;
+    color:white;
+    height:100vh;
+    padding:20px;
+    position:fixed;
+}
+
+.sidebar a {
+    display:block;
+    color:white;
+    margin:10px 0;
+    text-decoration:none;
+    padding:10px;
+}
+
+.main {
+    margin-left:240px;
+    padding:20px;
+    width:100%;
+}
+
+.box {
+    background:white;
+    padding:20px;
+    border-radius:10px;
+}
+</style>
 </head>
 
-<body style="font-family:Arial;background:#f1f5f9;">
+<body>
 
-<!-- MENU -->
-<div style="background:#0f172a;padding:10px;">
-    <a href="/" style="color:white;">Dashboard</a>
+<div class="sidebar">
+    <h2>OPSEG</h2>
+    <a href="/">Dashboard</a>
+    <a href="/grafico">Gráficos</a>
+    <a href="/usuarios">Usuários</a>
+    <a href="/clientes">Clientes</a>
+    <a href="/logout">Sair</a>
 </div>
 
-<h2>Gráfico</h2>
+<div class="main">
+
+<div class="box">
+<h2>Gráfico por Nível</h2>
 
 <form method="GET">
 <select name="operador">
 <option value="todos">Todos</option>
-
 {% for op in operadores %}
 <option value="{{ op }}">{{ op }}</option>
 {% endfor %}
@@ -25,8 +70,12 @@
 <button>Filtrar</button>
 </form>
 
-<div style="width:300px;">
+<div style="width:300px; margin:auto;">
 <canvas id="grafico"></canvas>
+</div>
+
+</div>
+
 </div>
 
 <script>
@@ -36,7 +85,7 @@ data: {
 labels: ["N1","N2","N3","N4"],
 datasets: [{
 data: {{ dados }},
-backgroundColor: ["green","yellow","orange","red"]
+backgroundColor: ["#22c55e","#eab308","#f97316","#ef4444"]
 }]
 }
 });

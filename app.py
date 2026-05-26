@@ -38,8 +38,8 @@ def criar_banco():
     )
     """)
 
-    # usuário padrão
-    c.execute("INSERT OR IGNORE INTO usuarios VALUES ('admin','123','admin')")
+    # 🔥 LOGIN CORRIGIDO
+    c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','evt123456','admin')")
 
     db.commit()
     db.close()
@@ -102,20 +102,24 @@ def index():
     c = db.cursor()
 
     if request.method == "POST":
-        c.execute("""
-        INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
-        VALUES (?,?,?,?,?)
-        """, (
-            request.form["data"],
-            request.form["titulo"],
-            request.form["cliente"],
-            request.form["colaborador"],
-            request.form["nivel"]
-        ))
-        db.commit()
+        try:
+            c.execute("""
+            INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
+            VALUES (?,?,?,?,?)
+            """, (
+                request.form["data"],
+                request.form["titulo"],
+                request.form["cliente"],
+                request.form["colaborador"],
+                request.form["nivel"]
+            ))
+            db.commit()
+        except Exception as e:
+            print("ERRO AO SALVAR:", e)
+
         return redirect("/")
 
-    c.execute("SELECT * FROM registros")
+    c.execute("SELECT * FROM registros ORDER BY id DESC")
     registros = c.fetchall()
 
     c.execute("SELECT COUNT(*) FROM registros")
@@ -139,7 +143,8 @@ def index():
         registros=registros,
         total=total,n1=n1,n2=n2,n3=n3,n4=n4,
         operadores=operadores,
-        clientes=clientes
+        clientes=clientes,
+        current_user=current_user
     )
 
 # ================= EDITAR NIVEL =================
@@ -197,20 +202,24 @@ def grafico():
 
     return render_template("grafico.html", dados=dados, operadores=operadores)
 
-# ================= USUÁRIO =================
+# ================= USUÁRIOS =================
 @app.route("/usuarios", methods=["GET","POST"])
 @login_required
 def usuarios():
     if request.method == "POST":
-        db = get_db()
-        c = db.cursor()
-        c.execute("INSERT INTO usuarios VALUES (?,?,?)", (
-            request.form["username"],
-            request.form["password"],
-            request.form["tipo"]
-        ))
-        db.commit()
-        db.close()
+        try:
+            db = get_db()
+            c = db.cursor()
+            c.execute("INSERT INTO usuarios VALUES (?,?,?)", (
+                request.form["username"],
+                request.form["password"],
+                request.form["tipo"]
+            ))
+            db.commit()
+            db.close()
+        except:
+            pass
+
         return redirect("/usuarios")
 
     return render_template("usuarios.html")
@@ -220,13 +229,17 @@ def usuarios():
 @login_required
 def clientes():
     if request.method == "POST":
-        db = get_db()
-        c = db.cursor()
-        c.execute("INSERT INTO clientes VALUES (?)", (
-            request.form["nome"],
-        ))
-        db.commit()
-        db.close()
+        try:
+            db = get_db()
+            c = db.cursor()
+            c.execute("INSERT INTO clientes VALUES (?)", (
+                request.form["nome"],
+            ))
+            db.commit()
+            db.close()
+        except:
+            pass
+
         return redirect("/clientes")
 
     return render_template("clientes.html")

@@ -2,16 +2,49 @@
 <html>
 <head>
 <title>Login</title>
+
+<style>
+body {
+    font-family:Arial;
+    background:#0f172a;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.box {
+    background:white;
+    padding:30px;
+    border-radius:10px;
+    width:300px;
+    text-align:center;
+}
+
+input {
+    width:100%;
+    padding:10px;
+    margin:10px 0;
+}
+
+button {
+    padding:10px;
+    width:100%;
+    background:#2563eb;
+    color:white;
+    border:none;
+}
+</style>
 </head>
 
-<body style="font-family:Arial;background:#f1f5f9;">
+<body>
 
-<div style="width:300px;margin:100px auto;background:white;padding:20px;border-radius:10px;text-align:center;">
-<h2>Login</h2>
+<div class="box">
+<h2>Login OPSEG</h2>
 
 <form method="POST">
-<input name="username" placeholder="Usuário" required><br><br>
-<input type="password" name="password" placeholder="Senha" required><br><br>
+<input name="username" placeholder="Usuário" required>
+<input type="password" name="password" placeholder="Senha" required>
 <button>Entrar</button>
 </form>
 

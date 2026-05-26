@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Clientes</title>
+<title>Usuários</title>
 
 <style>
 body {margin:0;font-family:Arial;display:flex;background:#f1f5f9;}
@@ -26,10 +26,17 @@ body {margin:0;font-family:Arial;display:flex;background:#f1f5f9;}
 <div class="main">
 <div class="box">
 
-<h2>Cadastrar Cliente</h2>
+<h2>Cadastrar Usuário</h2>
 
 <form method="POST">
-<input name="nome" placeholder="Nome do cliente" required>
+<input name="username" placeholder="Usuário" required>
+<input name="password" placeholder="Senha" required>
+
+<select name="tipo">
+<option value="admin">Admin</option>
+<option value="normal">Normal</option>
+</select>
+
 <button>Cadastrar</button>
 </form>
 

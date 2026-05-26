@@ -2,49 +2,171 @@
 <html>
 <head>
 <title>Dashboard</title>
+
+<style>
+body {
+    margin:0;
+    font-family:Arial;
+    display:flex;
+    background:#f1f5f9;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width:220px;
+    background:#0f172a;
+    color:white;
+    height:100vh;
+    padding:20px;
+    position:fixed;
+}
+
+.sidebar h2 {
+    margin-bottom:20px;
+}
+
+.sidebar a {
+    display:block;
+    color:white;
+    margin:10px 0;
+    text-decoration:none;
+    padding:10px;
+    border-radius:6px;
+}
+
+.sidebar a:hover {
+    background:#1e293b;
+}
+
+/* MAIN */
+.main {
+    margin-left:240px;
+    padding:20px;
+    width:100%;
+}
+
+/* TOPBAR */
+.topbar {
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+    display:flex;
+    justify-content:space-between;
+}
+
+/* CARDS */
+.cards {
+    display:flex;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.card {
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    flex:1;
+    text-align:center;
+    font-size:18px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* FORM */
+form {
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+form input, form select, form button {
+    padding:10px;
+    margin:5px;
+}
+
+/* TABLE */
+table {
+    width:100%;
+    background:white;
+    border-collapse:collapse;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+th, td {
+    padding:10px;
+    border-bottom:1px solid #ddd;
+    text-align:center;
+}
+
+th {
+    background:#2563eb;
+    color:white;
+}
+</style>
 </head>
 
-<body style="font-family:Arial;background:#f1f5f9;">
+<body>
 
-<!-- MENU -->
-<div style="background:#0f172a;padding:10px;">
-    <a href="/" style="color:white;">Dashboard</a>
-    <a href="/grafico" style="color:white;margin-left:15px;">Gráficos</a>
-    <a href="/usuarios" style="color:white;margin-left:15px;">Usuários</a>
-    <a href="/clientes" style="color:white;margin-left:15px;">Clientes</a>
-    <a href="/logout" style="color:red;margin-left:15px;">Sair</a>
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <h2>OPSEG</h2>
+
+    <a href="/">Dashboard</a>
+    <a href="/grafico">Gráficos</a>
+    <a href="/usuarios">Cadastrar Usuário</a>
+    <a href="/clientes">Clientes</a>
+    <a href="/logout">Sair</a>
 </div>
 
-<h2>Dashboard</h2>
+<!-- CONTEÚDO -->
+<div class="main">
 
-<p>Total: {{ total }} | N1: {{ n1 }} | N2: {{ n2 }} | N3: {{ n3 }} | N4: {{ n4 }}</p>
+<!-- TOPO -->
+<div class="topbar">
+    <h3>Dashboard Operacional</h3>
+    <span>Usuário: {{ current_user.id }}</span>
+</div>
 
+<!-- CARDS -->
+<div class="cards">
+    <div class="card">Total<br><b>{{ total }}</b></div>
+    <div class="card">N1<br><b>{{ n1 }}</b></div>
+    <div class="card">N2<br><b>{{ n2 }}</b></div>
+    <div class="card">N3<br><b>{{ n3 }}</b></div>
+    <div class="card">N4<br><b>{{ n4 }}</b></div>
+</div>
+
+<!-- FORM -->
 <form method="POST">
 
 <input type="date" name="data" required>
 
-<input name="titulo" placeholder="Título" required>
+<input name="titulo" placeholder="Título do trabalho" required>
 
-<select name="cliente">
-{% for c in clientes %}
-<option>{{ c }}</option>
-{% endfor %}
+<select name="cliente" required>
+    <option value="">Selecione o cliente</option>
+    {% for c in clientes %}
+    <option value="{{ c }}">{{ c }}</option>
+    {% endfor %}
 </select>
 
 <input name="colaborador" placeholder="Colaborador" required>
 
-<select name="nivel">
-<option value="1">1</option>
-<option value="2">2</option>
-<option value="3">3</option>
-<option value="4">4</option>
+<select name="nivel" required>
+<option value="1">Nível 1</option>
+<option value="2">Nível 2</option>
+<option value="3">Nível 3</option>
+<option value="4">Nível 4</option>
 </select>
 
 <button>Salvar</button>
 
 </form>
 
-<table border="1">
+<!-- TABELA -->
+<table>
 <tr>
 <th>ID</th>
 <th>Data</th>
@@ -62,23 +184,28 @@
 <td>{{ r[2] }}</td>
 <td>{{ r[3] }}</td>
 <td>{{ r[4] }}</td>
+
 <td>
 <form action="/editar/{{ r[0] }}" method="POST">
 <select name="nivel">
-<option {% if r[5]=='1' %}selected{% endif %}>1</option>
-<option {% if r[5]=='2' %}selected{% endif %}>2</option>
-<option {% if r[5]=='3' %}selected{% endif %}>3</option>
-<option {% if r[5]=='4' %}selected{% endif %}>4</option>
+<option value="1" {% if r[5]=='1' %}selected{% endif %}>1</option>
+<option value="2" {% if r[5]=='2' %}selected{% endif %}>2</option>
+<option value="3" {% if r[5]=='3' %}selected{% endif %}>3</option>
+<option value="4" {% if r[5]=='4' %}selected{% endif %}>4</option>
 </select>
-<button>Alterar</button>
+<button>OK</button>
 </form>
 </td>
 
-<td><a href="/delete/{{ r[0] }}">Excluir</a></td>
+<td>
+<a href="/delete/{{ r[0] }}">Excluir</a>
+</td>
+
 </tr>
 {% endfor %}
-
 </table>
+
+</div>
 
 </body>
 </html>
