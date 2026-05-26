@@ -16,7 +16,10 @@
 <button>Filtrar</button>
 </form>
 
+<!-- 🔥 TAMANHO CONTROLADO -->
+<div style="width:400px;">
 <canvas id="grafico"></canvas>
+</div>
 
 <script>
 const dados = {{ dados | tojson }}
@@ -26,9 +29,13 @@ type: 'pie',
 data: {
 labels: ["N1","N2","N3","N4"],
 datasets: [{
-data: [dados["1"], dados["2"], dados["3"], dados["4"]],
+data: dados,
 backgroundColor: ["green","yellow","orange","red"]
 }]
+},
+options: {
+responsive: true,
+maintainAspectRatio: true
 }
 });
 </script>

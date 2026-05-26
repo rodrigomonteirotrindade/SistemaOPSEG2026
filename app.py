@@ -11,7 +11,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-# ================= USERS =================
 users = {
     "liderseg": {"password": "123", "tipo": "admin"},
 }
@@ -25,9 +24,9 @@ class User(UserMixin):
 def load_user(user_id):
     return User(user_id)
 
-# ================= ARQUIVO =================
+# 🔥 NOVA COLUNA
 arquivo = "registros.xlsx"
-colunas = ["Data", "Cliente", "Colaborador", "Nivel"]
+colunas = ["Data", "Cliente", "Colaborador", "Titulo", "Nivel"]
 
 def carregar_df():
     if not os.path.exists(arquivo):
@@ -39,12 +38,10 @@ def carregar_df():
     except:
         df = pd.DataFrame(columns=colunas)
 
-    # garante colunas
     for c in colunas:
         if c not in df.columns:
             df[c] = ""
 
-    # limpa dados
     df = df.fillna("")
     df["Nivel"] = df["Nivel"].astype(str).str.replace(".0", "", regex=False)
 
@@ -53,7 +50,7 @@ def carregar_df():
 def salvar_df(df):
     df.to_excel(arquivo, index=False)
 
-# ================= LOGIN =================
+# LOGIN
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "POST":
@@ -72,24 +69,7 @@ def logout():
     logout_user()
     return redirect("/login")
 
-# ================= CRIAR USUÁRIO =================
-@app.route("/criar_usuario", methods=["GET","POST"])
-@login_required
-def criar_usuario():
-    if current_user.tipo != "admin":
-        return redirect("/")
-
-    if request.method == "POST":
-        u = request.form["usuario"]
-        s = request.form["senha"]
-        t = request.form["tipo"]
-
-        users[u] = {"password": s, "tipo": t}
-        return redirect("/")
-
-    return render_template("criar_usuario.html")
-
-# ================= DELETE =================
+# DELETE
 @app.route("/delete/<int:id>")
 @login_required
 def delete(id):
@@ -101,7 +81,7 @@ def delete(id):
     salvar_df(df)
     return redirect("/")
 
-# ================= DASHBOARD =================
+# DASHBOARD
 @app.route("/", methods=["GET","POST"])
 @login_required
 def index():
@@ -113,6 +93,7 @@ def index():
             request.form["data"],
             request.form["cliente"],
             request.form["colaborador"],
+            request.form["titulo"],   # 🔥 NOVO
             request.form["nivel"]
         ]], columns=colunas)
 
@@ -144,7 +125,7 @@ def index():
         tipo=current_user.tipo
     )
 
-# ================= GRÁFICO =================
+# GRÁFICO SINCRONIZADO
 @app.route("/grafico")
 @login_required
 def grafico():
@@ -153,17 +134,18 @@ def grafico():
 
     df = carregar_df()
 
+    # 🔥 MESMA BASE DO DASHBOARD
     if operador and operador != "todos":
         df = df[df["Colaborador"] == operador]
 
-    contagem = df["Nivel"].value_counts().to_dict()
+    contagem = df["Nivel"].value_counts()
 
-    dados = {
-        "1": contagem.get("1",0),
-        "2": contagem.get("2",0),
-        "3": contagem.get("3",0),
-        "4": contagem.get("4",0)
-    }
+    dados = [
+        contagem.get("1", 0),
+        contagem.get("2", 0),
+        contagem.get("3", 0),
+        contagem.get("4", 0)
+    ]
 
     operadores = sorted([op for op in carregar_df()["Colaborador"].unique() if op != ""])
 
@@ -174,7 +156,7 @@ def grafico():
         operador=operador
     )
 
-# ================= RUN =================
+# RUN
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
