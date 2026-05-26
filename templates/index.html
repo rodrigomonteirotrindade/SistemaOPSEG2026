@@ -1,24 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>OPSEG</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body {margin:0;font-family:Arial;display:flex;}
-.sidebar {width:220px;background:#1e293b;color:white;height:100vh;padding:20px;}
-.sidebar a {display:block;color:white;margin:10px 0;text-decoration:none;}
-.main {flex:1;padding:20px;background:#f1f5f9;}
-.cards {display:flex;gap:10px;}
-.card {background:white;padding:15px;border-radius:8px;flex:1;text-align:center;}
-table {width:100%;margin-top:20px;background:white;border-collapse:collapse;}
-th,td {padding:10px;border:1px solid #ddd;text-align:center;}
-th {background:#2563eb;color:white;}
-</style>
-</head>
-
-<body>
-
 <div class="sidebar">
 <h2>OPSEG</h2>
 <a href="/">Dashboard</a>
@@ -27,19 +6,16 @@ th {background:#2563eb;color:white;}
 <a href="/logout">Sair</a>
 </div>
 
-<div class="main">
-
 <h2>Dashboard</h2>
 
 <div class="cards">
-<div class="card"><h3>{{ total }}</h3><p>Total</p></div>
-<div class="card"><h3>{{ n1 }}</h3><p>Nível 1</p></div>
-<div class="card"><h3>{{ n2 }}</h3><p>Nível 2</p></div>
-<div class="card"><h3>{{ n3 }}</h3><p>Nível 3</p></div>
-<div class="card"><h3>{{ n4 }}</h3><p>Nível 4</p></div>
+<div class="card">{{ total }}<br>Total</div>
+<div class="card">{{ n1 }}<br>N1</div>
+<div class="card">{{ n2 }}<br>N2</div>
+<div class="card">{{ n3 }}<br>N3</div>
+<div class="card">{{ n4 }}<br>N4</div>
 </div>
 
-{% if tipo == "admin" %}
 <form method="POST">
 <input type="date" name="data" required>
 
@@ -59,7 +35,6 @@ th {background:#2563eb;color:white;}
 
 <button>Salvar</button>
 </form>
-{% endif %}
 
 <table>
 <tr>
@@ -67,6 +42,7 @@ th {background:#2563eb;color:white;}
 <th>Cliente</th>
 <th>Colaborador</th>
 <th>Nível</th>
+<th>Ação</th>
 </tr>
 
 {% for r in registros %}
@@ -75,10 +51,7 @@ th {background:#2563eb;color:white;}
 <td>{{ r["Cliente"] }}</td>
 <td>{{ r["Colaborador"] }}</td>
 <td>{{ r["Nivel"] }}</td>
+<td><a href="/delete/{{ loop.index0 }}">Excluir</a></td>
 </tr>
 {% endfor %}
 </table>
-
-</div>
-</body>
-</html>

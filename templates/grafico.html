@@ -1,19 +1,34 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<h2>Gráfico</h2>
+<h2>Gráfico por Operador</h2>
+
+<form method="GET">
+<select name="operador">
+<option value="todos">Todos</option>
+
+{% for op in operadores %}
+<option value="{{ op }}" {% if operador == op %}selected{% endif %}>
+{{ op }}
+</option>
+{% endfor %}
+
+</select>
+
+<button>Filtrar</button>
+</form>
 
 <canvas id="grafico"></canvas>
 
 <script>
-const dados = {{ dados | tojson }};
+const dados = {{ dados | tojson }}
 
 new Chart(document.getElementById("grafico"), {
-    type: 'pie',
-    data: {
-        labels: ["N1","N2","N3","N4"],
-        datasets: [{
-            data: [dados["1"], dados["2"], dados["3"], dados["4"]]
-        }]
-    }
+type: 'pie',
+data: {
+labels: ["N1","N2","N3","N4"],
+datasets: [{
+data: [dados["1"], dados["2"], dados["3"], dados["4"]]
+}]
+}
 });
 </script>

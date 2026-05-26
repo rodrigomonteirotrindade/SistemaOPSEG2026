@@ -11,7 +11,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-# ================= USUÁRIOS =================
+# USERS
 users = {
     "liderseg": {"password": "evt123456", "tipo": "admin"},
     "operador1": {"password": "123", "tipo": "operador"}
@@ -26,22 +26,24 @@ class User(UserMixin):
 def load_user(user_id):
     return User(user_id)
 
-# ================= EXCEL =================
 arquivo = "registros.xlsx"
 colunas = ["Data", "Cliente", "Colaborador", "Nivel"]
 
+# CRIA / CORRIGE EXCEL
 if not os.path.exists(arquivo):
     df = pd.DataFrame(columns=colunas)
     df.to_excel(arquivo, index=False)
-else:
-    df = pd.read_excel(arquivo)
-    for c in colunas:
-        if c not in df.columns:
-            df[c] = ""
-    df = df[colunas]
-    df.to_excel(arquivo, index=False)
 
-# ================= LOGIN =================
+def carregar_df():
+    df = pd.read_excel(arquivo)
+
+    # LIMPEZA IMPORTANTE (resolve seu problema)
+    df["Nivel"] = df["Nivel"].astype(str).str.replace(".0", "", regex=False)
+    df = df.fillna("")
+
+    return df
+
+# LOGIN
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -60,92 +62,85 @@ def logout():
     logout_user()
     return redirect("/login")
 
-# ================= CRIAR USUÁRIO =================
-@app.route("/criar_usuario", methods=["GET", "POST"])
-@login_required
-def criar_usuario():
-    if current_user.tipo != "admin":
-        return redirect("/")
-
-    if request.method == "POST":
-        u = request.form["usuario"]
-        s = request.form["senha"]
-        t = request.form["tipo"]
-
-        users[u] = {"password": s, "tipo": t}
-        return redirect("/")
-
-    return render_template("criar_usuario.html")
-
-# ================= DELETE =================
+# DELETE
 @app.route("/delete/<int:id>")
 @login_required
 def delete(id):
-    df = pd.read_excel(arquivo)
-    if id < len(df):
-        df = df.drop(id)
-        df.to_excel(arquivo, index=False)
+    df = carregar_df()
+    df = df.drop(id)
+    df.to_excel(arquivo, index=False)
     return redirect("/")
 
-# ================= GRÁFICO =================
-@app.route("/grafico")
-@login_required
-def grafico():
-    df = pd.read_excel(arquivo)
-
-    if df.empty:
-        dados = {"1":0,"2":0,"3":0,"4":0}
-    else:
-        contagem = df["Nivel"].value_counts().to_dict()
-        dados = {
-            "1": contagem.get("1", 0),
-            "2": contagem.get("2", 0),
-            "3": contagem.get("3", 0),
-            "4": contagem.get("4", 0)
-        }
-
-    return render_template("grafico.html", dados=dados)
-
-# ================= HOME =================
+# DASHBOARD
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
 
     if request.method == "POST":
-        data = request.form["data"]
-        cliente = request.form["cliente"]
-        colaborador = request.form["colaborador"]
-        nivel = request.form["nivel"]
+        df = carregar_df()
 
-        df = pd.read_excel(arquivo)
-        novo = pd.DataFrame([[data, cliente, colaborador, nivel]], columns=df.columns)
+        novo = pd.DataFrame([[
+            request.form["data"],
+            request.form["cliente"],
+            request.form["colaborador"],
+            request.form["nivel"]
+        ]], columns=df.columns)
+
         df = pd.concat([df, novo], ignore_index=True)
         df.to_excel(arquivo, index=False)
 
         return redirect("/")
 
-    df = pd.read_excel(arquivo)
+    df = carregar_df()
     registros = df.to_dict(orient="records")
 
-    # DASHBOARD CONTADORES
-    total = len(registros)
-    n1 = len([r for r in registros if r["Nivel"] == "1"])
-    n2 = len([r for r in registros if r["Nivel"] == "2"])
-    n3 = len([r for r in registros if r["Nivel"] == "3"])
-    n4 = len([r for r in registros if r["Nivel"] == "4"])
+    # CONTADORES CORRETOS
+    total = len(df)
+    n1 = len(df[df["Nivel"] == "1"])
+    n2 = len(df[df["Nivel"] == "2"])
+    n3 = len(df[df["Nivel"] == "3"])
+    n4 = len(df[df["Nivel"] == "4"])
+
+    operadores = sorted(df["Colaborador"].unique())
 
     return render_template(
         "index.html",
         registros=registros,
-        tipo=current_user.tipo,
         total=total,
         n1=n1,
         n2=n2,
         n3=n3,
-        n4=n4
+        n4=n4,
+        tipo=current_user.tipo,
+        operadores=operadores
     )
 
-# ================= RENDER =================
+# GRÁFICO COM FILTRO
+@app.route("/grafico", methods=["GET"])
+@login_required
+def grafico():
+
+    operador = request.args.get("operador")
+
+    df = carregar_df()
+
+    if operador and operador != "todos":
+        df = df[df["Colaborador"] == operador]
+
+    contagem = df["Nivel"].value_counts().to_dict()
+
+    dados = {
+        "1": contagem.get("1", 0),
+        "2": contagem.get("2", 0),
+        "3": contagem.get("3", 0),
+        "4": contagem.get("4", 0),
+    }
+
+    operadores = sorted(df["Colaborador"].unique())
+
+    return render_template("grafico.html", dados=dados, operadores=operadores, operador=operador)
+
+# RENDER
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
