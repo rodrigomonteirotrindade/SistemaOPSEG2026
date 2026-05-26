@@ -1,194 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Dashboard Power BI</title>
+<title>Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {
-    margin:0;
-    font-family:Arial;
-    display:flex;
-    background:#0f172a;
-    color:white;
-}
-
-/* SIDEBAR */
-.sidebar {
-    width:220px;
-    background:#020617;
-    padding:20px;
-    height:100vh;
-    position:fixed;
-}
-
-.sidebar h2 {
-    color:#38bdf8;
-}
-
-.sidebar a {
-    display:block;
-    color:#cbd5f5;
-    margin:10px 0;
-    text-decoration:none;
-    padding:10px;
-    border-radius:6px;
-}
-
-.sidebar a:hover {
-    background:#1e293b;
-}
-
-/* MAIN */
-.main {
-    margin-left:240px;
-    padding:20px;
-    width:100%;
-}
-
-/* TOP */
-.topbar {
-    display:flex;
-    justify-content:space-between;
-    margin-bottom:20px;
-}
-
-/* CARDS */
-.cards {
-    display:flex;
-    gap:15px;
-    margin-bottom:20px;
-}
-
-.card {
-    flex:1;
-    padding:20px;
-    border-radius:12px;
-    color:white;
-    font-size:18px;
-}
-
-.total { background:linear-gradient(45deg,#3b82f6,#06b6d4); }
-.n1 { background:#22c55e; }
-.n2 { background:#eab308; }
-.n3 { background:#f97316; }
-.n4 { background:#ef4444; }
-
-/* GRID */
-.grid {
-    display:grid;
-    grid-template-columns: 2fr 1fr;
-    gap:20px;
-}
-
-/* BOX */
-.box {
-    background:#1e293b;
-    padding:20px;
-    border-radius:12px;
-}
-
-/* TABLE */
-table {
-    width:100%;
-    border-collapse:collapse;
-}
-
-th, td {
-    padding:8px;
-    text-align:center;
-}
-
-th {
-    background:#2563eb;
-}
+body {margin:0;font-family:Arial;background:#0f172a;color:white;display:flex;}
+.sidebar {width:220px;background:#020617;padding:20px;height:100vh;position:fixed;}
+.sidebar a {display:block;color:#cbd5f5;margin:10px 0;padding:10px;text-decoration:none;}
+.main {margin-left:240px;padding:20px;width:100%;}
+.cards {display:flex;gap:10px;margin-bottom:20px;}
+.card {flex:1;padding:15px;border-radius:10px;text-align:center;}
+.total{background:#3b82f6;} .n1{background:#22c55e;}
+.n2{background:#eab308;} .n3{background:#f97316;} .n4{background:#ef4444;}
+.box {background:#1e293b;padding:20px;border-radius:10px;margin-bottom:20px;}
 </style>
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
 <div class="sidebar">
-    <h2>OPSEG</h2>
-    <a href="/">Dashboard</a>
-    <a href="/grafico">Gráficos</a>
-    <a href="/usuarios">Usuários</a>
-    <a href="/clientes">Clientes</a>
-    <a href="/logout">Sair</a>
+<h2>OPSEG</h2>
+<a href="/">Dashboard</a>
+<a href="/logout">Sair</a>
 </div>
 
 <div class="main">
 
-<!-- TOPO -->
-<div class="topbar">
-    <h2>Dashboard Executivo</h2>
-    <span>{{ current_user.id }}</span>
-</div>
+<h2>Dashboard</h2>
 
-<!-- FILTRO -->
 <div class="box">
 <form method="GET">
+
 <select name="operador">
 <option value="todos">Todos</option>
 {% for op in operadores %}
 <option value="{{ op }}">{{ op }}</option>
 {% endfor %}
 </select>
+
+<br><br>
+
+<input type="date" name="data_inicio" value="{{ data_inicio }}">
+<input type="date" name="data_fim" value="{{ data_fim }}">
+
+<br><br>
+
 <button>Filtrar</button>
+
 </form>
 </div>
 
-<!-- CARDS -->
 <div class="cards">
-    <div class="card total">Total<br><b>{{ total }}</b></div>
-    <div class="card n1">N1<br><b>{{ n1 }}</b></div>
-    <div class="card n2">N2<br><b>{{ n2 }}</b></div>
-    <div class="card n3">N3<br><b>{{ n3 }}</b></div>
-    <div class="card n4">N4<br><b>{{ n4 }}</b></div>
+<div class="card total">Total<br>{{ total }}</div>
+<div class="card n1">N1<br>{{ n1 }}</div>
+<div class="card n2">N2<br>{{ n2 }}</div>
+<div class="card n3">N3<br>{{ n3 }}</div>
+<div class="card n4">N4<br>{{ n4 }}</div>
 </div>
 
-<!-- GRID -->
-<div class="grid">
-
-<!-- GRÁFICO -->
-<div class="box">
-<h3>Distribuição</h3>
-
+<div class="box" style="width:350px;">
 <canvas id="grafico"></canvas>
-
-<h2>💰 Total: R$ {{ (n1*1.99 + n2*2.99 + n3*4.99 + n4*7.99)|round(2) }}</h2>
+<h3>R$ {{ (n1*1.99 + n2*2.99 + n3*4.99 + n4*7.99)|round(2) }}</h3>
 </div>
 
-<!-- RANKING -->
 <div class="box">
-<h3>Ranking Operadores</h3>
-
-<table>
-<tr><th>Operador</th><th>Total</th></tr>
-
+<h3>Ranking</h3>
 {% for r in ranking %}
-<tr>
-<td>{{ r[0] }}</td>
-<td>{{ r[1] }}</td>
-</tr>
+<p>{{ r[0] }} - {{ r[1] }}</p>
 {% endfor %}
-
-</table>
-
 </div>
 
-</div>
-
-<!-- FORM -->
 <div class="box">
 <form method="POST">
 
 <input type="date" name="data" required>
-
 <input name="titulo" placeholder="Título" required>
 
-<select name="cliente" required>
-<option value="">Cliente</option>
+<select name="cliente">
 {% for c in clientes %}
 <option value="{{ c }}">{{ c }}</option>
 {% endfor %}
@@ -216,8 +105,8 @@ type: 'doughnut',
 data: {
 labels: ["N1","N2","N3","N4"],
 datasets: [{
-data: [{{ n1 }}, {{ n2 }}, {{ n3 }}, {{ n4 }}],
-backgroundColor: ["#22c55e","#eab308","#f97316","#ef4444"]
+data: [{{ n1 }},{{ n2 }},{{ n3 }},{{ n4 }}],
+backgroundColor: ["green","yellow","orange","red"]
 }]
 }
 });

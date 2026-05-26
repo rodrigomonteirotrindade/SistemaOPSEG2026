@@ -1,82 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Gráficos</title>
+<title>Gráfico</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body {
-    margin:0;
-    font-family:Arial;
-    display:flex;
-    background:#f1f5f9;
-}
-
-.sidebar {
-    width:220px;
-    background:#0f172a;
-    color:white;
-    height:100vh;
-    padding:20px;
-    position:fixed;
-}
-
-.sidebar a {
-    display:block;
-    color:white;
-    margin:10px 0;
-    text-decoration:none;
-    padding:10px;
-}
-
-.main {
-    margin-left:240px;
-    padding:20px;
-    width:100%;
-}
-
-.box {
-    background:white;
-    padding:20px;
-    border-radius:10px;
-}
-</style>
 </head>
 
 <body>
 
-<div class="sidebar">
-    <h2>OPSEG</h2>
-    <a href="/">Dashboard</a>
-    <a href="/grafico">Gráficos</a>
-    <a href="/usuarios">Usuários</a>
-    <a href="/clientes">Clientes</a>
-    <a href="/logout">Sair</a>
-</div>
-
-<div class="main">
-
-<div class="box">
-<h2>Gráfico por Nível</h2>
+<h2>Gráfico de Níveis</h2>
 
 <form method="GET">
-<select name="operador">
-<option value="todos">Todos</option>
-{% for op in operadores %}
-<option value="{{ op }}">{{ op }}</option>
+
+<select name="cliente">
+<option value="todos">Todos Clientes</option>
+{% for c in clientes %}
+<option value="{{ c }}">{{ c }}</option>
 {% endfor %}
 </select>
 
+<br><br>
+
+<label>Data início:</label>
+<input type="date" name="data_inicio">
+
+<label>Data fim:</label>
+<input type="date" name="data_fim">
+
+<br><br>
+
 <button>Filtrar</button>
+
 </form>
 
-<div style="width:300px; margin:auto;">
+<div style="width:300px;">
 <canvas id="grafico"></canvas>
 </div>
 
-</div>
-
-</div>
+<h3>Total em R$: {{ total_valor }}</h3>
 
 <script>
 new Chart(document.getElementById("grafico"), {
@@ -85,7 +45,7 @@ data: {
 labels: ["N1","N2","N3","N4"],
 datasets: [{
 data: {{ dados }},
-backgroundColor: ["#22c55e","#eab308","#f97316","#ef4444"]
+backgroundColor: ["green","yellow","orange","red"]
 }]
 }
 });
