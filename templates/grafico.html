@@ -1,45 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
 
-<style>
-body {font-family:Arial;background:#f1f5f9;padding:20px;}
-.container {background:white;padding:20px;border-radius:10px;}
-</style>
+<body style="font-family:Arial;background:#f1f5f9;">
 
-<div class="container">
+<!-- MENU -->
+<div style="background:#0f172a;padding:10px;">
+    <a href="/" style="color:white;">Dashboard</a>
+</div>
 
-<h2>Gráfico Operacional</h2>
+<h2>Gráfico</h2>
 
 <form method="GET">
 <select name="operador">
 <option value="todos">Todos</option>
 
 {% for op in operadores %}
-<option value="{{ op }}" {% if operador == op %}selected{% endif %}>
-{{ op }}
-</option>
+<option value="{{ op }}">{{ op }}</option>
 {% endfor %}
 </select>
 
 <button>Filtrar</button>
 </form>
 
-<div style="width:300px; margin:auto;">
+<div style="width:300px;">
 <canvas id="grafico"></canvas>
 </div>
 
-</div>
-
 <script>
-const dados = {{ dados | tojson }}
-
 new Chart(document.getElementById("grafico"), {
 type: 'pie',
 data: {
 labels: ["N1","N2","N3","N4"],
 datasets: [{
-data: [dados["1"], dados["2"], dados["3"], dados["4"]],
-backgroundColor: ["#22c55e","#eab308","#f97316","#ef4444"]
+data: {{ dados }},
+backgroundColor: ["green","yellow","orange","red"]
 }]
 }
 });
 </script>
+
+</body>
+</html>

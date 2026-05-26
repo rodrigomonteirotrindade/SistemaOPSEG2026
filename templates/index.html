@@ -1,144 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>OPSEG</title>
-
-<style>
-body {
-    margin:0;
-    font-family:Arial;
-    display:flex;
-    background:#f1f5f9;
-}
-
-/* SIDEBAR */
-.sidebar {
-    width:220px;
-    background:#0f172a;
-    color:white;
-    height:100vh;
-    padding:20px;
-    position:fixed;
-}
-
-.sidebar h2 {
-    margin-bottom:20px;
-}
-
-.sidebar a {
-    display:block;
-    color:white;
-    margin:10px 0;
-    text-decoration:none;
-    padding:10px;
-    border-radius:6px;
-}
-
-.sidebar a:hover {
-    background:#1e293b;
-}
-
-/* MAIN */
-.main {
-    margin-left:240px;
-    padding:20px;
-    width:100%;
-}
-
-/* TOPBAR */
-.topbar {
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:20px;
-    display:flex;
-    justify-content:space-between;
-}
-
-/* CARDS */
-.cards {
-    display:flex;
-    gap:15px;
-    margin-bottom:20px;
-}
-
-.card {
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    flex:1;
-    text-align:center;
-    font-size:18px;
-    box-shadow:0 2px 5px rgba(0,0,0,0.1);
-}
-
-/* FORM */
-form {
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:20px;
-}
-
-form input, form select, form button {
-    padding:10px;
-    margin:5px;
-}
-
-/* TABLE */
-table {
-    width:100%;
-    background:white;
-    border-collapse:collapse;
-}
-
-th, td {
-    padding:10px;
-    border-bottom:1px solid #ddd;
-    text-align:center;
-}
-
-th {
-    background:#2563eb;
-    color:white;
-}
-</style>
+<title>Dashboard</title>
 </head>
 
-<body>
+<body style="font-family:Arial;background:#f1f5f9;">
 
-<div class="sidebar">
-<h2>OPSEG</h2>
-<a href="/">Dashboard</a>
-<a href="/grafico">Gráficos</a>
-<a href="/criar_usuario">Cadastrar Usuário</a>
-<a href="/logout">Sair</a>
+<!-- MENU -->
+<div style="background:#0f172a;padding:10px;">
+    <a href="/" style="color:white;">Dashboard</a>
+    <a href="/grafico" style="color:white;margin-left:15px;">Gráficos</a>
+    <a href="/usuarios" style="color:white;margin-left:15px;">Usuários</a>
+    <a href="/clientes" style="color:white;margin-left:15px;">Clientes</a>
+    <a href="/logout" style="color:red;margin-left:15px;">Sair</a>
 </div>
 
-<div class="main">
+<h2>Dashboard</h2>
 
-<div class="topbar">
-<h3>Dashboard Operacional</h3>
-<span>Usuário: {{ current_user.id }}</span>
-</div>
-
-<div class="cards">
-<div class="card">Total<br><b>{{ total }}</b></div>
-<div class="card">N1<br><b>{{ n1 }}</b></div>
-<div class="card">N2<br><b>{{ n2 }}</b></div>
-<div class="card">N3<br><b>{{ n3 }}</b></div>
-<div class="card">N4<br><b>{{ n4 }}</b></div>
-</div>
+<p>Total: {{ total }} | N1: {{ n1 }} | N2: {{ n2 }} | N3: {{ n3 }} | N4: {{ n4 }}</p>
 
 <form method="POST">
 
 <input type="date" name="data" required>
 
-<input name="titulo" placeholder="Título do trabalho" required>
+<input name="titulo" placeholder="Título" required>
 
 <select name="cliente">
-<option>Acy Andrade</option>
-<option>Atrium 3</option>
+{% for c in clientes %}
+<option>{{ c }}</option>
+{% endfor %}
 </select>
 
 <input name="colaborador" placeholder="Colaborador" required>
@@ -151,10 +41,12 @@ th {
 </select>
 
 <button>Salvar</button>
+
 </form>
 
-<table>
+<table border="1">
 <tr>
+<th>ID</th>
 <th>Data</th>
 <th>Título</th>
 <th>Cliente</th>
@@ -165,16 +57,28 @@ th {
 
 {% for r in registros %}
 <tr>
-<td>{{ r["Data"] }}</td>
-<td>{{ r["Titulo"] }}</td>
-<td>{{ r["Cliente"] }}</td>
-<td>{{ r["Colaborador"] }}</td>
-<td>{{ r["Nivel"] }}</td>
-<td><a href="/delete/{{ loop.index0 }}">Excluir</a></td>
+<td>{{ r[0] }}</td>
+<td>{{ r[1] }}</td>
+<td>{{ r[2] }}</td>
+<td>{{ r[3] }}</td>
+<td>{{ r[4] }}</td>
+<td>
+<form action="/editar/{{ r[0] }}" method="POST">
+<select name="nivel">
+<option {% if r[5]=='1' %}selected{% endif %}>1</option>
+<option {% if r[5]=='2' %}selected{% endif %}>2</option>
+<option {% if r[5]=='3' %}selected{% endif %}>3</option>
+<option {% if r[5]=='4' %}selected{% endif %}>4</option>
+</select>
+<button>Alterar</button>
+</form>
+</td>
+
+<td><a href="/delete/{{ r[0] }}">Excluir</a></td>
 </tr>
 {% endfor %}
+
 </table>
 
-</div>
 </body>
 </html>
