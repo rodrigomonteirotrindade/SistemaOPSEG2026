@@ -2,41 +2,120 @@
 <html>
 <head>
     <title>Sistema OPSEG</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background-color: #f4f6f8;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        form {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            width: 300px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        input {
+            width: 95%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+            background: white;
+        }
+
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+
+        th {
+            background: #007BFF;
+            color: white;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        .topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logout {
+            text-decoration: none;
+            background: red;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+
+        .logout:hover {
+            background: darkred;
+        }
+    </style>
 </head>
+
 <body>
 
-<h2>Cadastro</h2>
+<div class="topo">
+    <h2>Sistema OPSEG</h2>
+    <a href="/logout" class="logout">Sair</a>
+</div>
+
+<h3>Cadastro</h3>
 
 <form method="POST">
-    <input type="date" name="data" required><br><br>
-    <input type="text" name="cliente" placeholder="Cliente" required><br><br>
-    <input type="text" name="colaborador" placeholder="Colaborador" required><br><br>
+    <input type="date" name="data" required>
+    <input type="text" name="cliente" placeholder="Cliente" required>
+    <input type="text" name="colaborador" placeholder="Colaborador" required>
     <button type="submit">Salvar</button>
 </form>
 
-<hr>
+<h3>Registros</h3>
 
-<h2>Registros</h2>
+<table>
+    <tr>
+        <th>Data</th>
+        <th>Cliente</th>
+        <th>Colaborador</th>
+    </tr>
 
-<table border="1">
-<tr>
-    <th>Data</th>
-    <th>Cliente</th>
-    <th>Colaborador</th>
-</tr>
-
-{% for r in registros %}
-<tr>
-    <td>{{ r.Data }}</td>
-    <td>{{ r.Cliente }}</td>
-    <td>{{ r.Colaborador }}</td>
-</tr>
-{% endfor %}
-
+    {% for r in registros %}
+    <tr>
+        <td>{{ r.Data }}</td>
+        <td>{{ r.Cliente }}</td>
+        <td>{{ r.Colaborador }}</td>
+    </tr>
+    {% endfor %}
 </table>
-
-<br>
-<a href="/logout">Sair</a>
 
 </body>
 </html>
