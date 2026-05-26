@@ -5,7 +5,12 @@
 <title>Dashboard</title>
 
 <style>
-body { margin:0; font-family:Arial; display:flex; }
+body {
+    margin:0;
+    font-family:Arial;
+    display:flex;
+}
+
 .sidebar {
     width:220px;
     background:#0f172a;
@@ -13,58 +18,84 @@ body { margin:0; font-family:Arial; display:flex; }
     height:100vh;
     padding:20px;
 }
+
 .sidebar a {
     display:block;
     color:white;
     margin:10px 0;
     text-decoration:none;
 }
+
 .content {
     flex:1;
     padding:20px;
     background:#f1f5f9;
 }
+
 .card {
     background:white;
     padding:15px;
     border-radius:10px;
     margin-bottom:15px;
 }
+
+button {
+    padding:8px;
+    border:none;
+    background:#3b82f6;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+input, select {
+    padding:8px;
+    margin:5px;
+}
 </style>
 </head>
 
 <body>
 
+<!-- MENU LATERAL -->
 <div class="sidebar">
 <h2>OPSEG</h2>
+
 <a href="/">Dashboard</a>
+<a href="/grafico">📊 Gráfico</a>
 <a href="/clientes">Clientes</a>
 <a href="/usuarios">Cadastrar Usuário</a>
 <a href="/logout">Sair</a>
+
 </div>
 
+<!-- CONTEÚDO -->
 <div class="content">
 
 <h2>Dashboard Operacional</h2>
 
+<!-- RESUMO -->
 <div class="card">
-Total: {{ total }} |
-N1: {{ n1 }} |
-N2: {{ n2 }} |
-N3: {{ n3 }} |
-N4: {{ n4 }} |
-💰 R$: {{ total_valor }}
+<strong>Total:</strong> {{ total }} |
+<strong>N1:</strong> {{ n1 }} |
+<strong>N2:</strong> {{ n2 }} |
+<strong>N3:</strong> {{ n3 }} |
+<strong>N4:</strong> {{ n4 }} |
+💰 <strong>R$ {{ total_valor }}</strong>
 </div>
 
-<!-- FORM CORRIGIDO -->
+<!-- FORMULÁRIO -->
 <div class="card">
+
+<h3>Novo Lançamento</h3>
+
 <form method="POST">
 
 <input type="date" name="data" required>
 
 <input name="titulo" placeholder="Título do trabalho" required>
 
-<!-- CLIENTE AGORA FUNCIONANDO -->
+<!-- CLIENTE FUNCIONANDO -->
 <select name="cliente" required>
 <option value="">Selecione o cliente</option>
 {% for c in clientes %}
@@ -72,7 +103,7 @@ N4: {{ n4 }} |
 {% endfor %}
 </select>
 
-<input name="colaborador" placeholder="Colaborador" required>
+<input name="colaborador" placeholder="Operador" required>
 
 <select name="nivel">
 <option value="1">Nível 1</option>
@@ -81,19 +112,27 @@ N4: {{ n4 }} |
 <option value="4">Nível 4</option>
 </select>
 
-<button>Salvar</button>
+<br><br>
+
+<button type="submit">Salvar</button>
 
 </form>
+
 </div>
 
+<!-- TABELA -->
 <div class="card">
+
+<h3>Registros</h3>
+
 <table border="1" width="100%">
+
 <tr>
 <th>ID</th>
 <th>Data</th>
 <th>Título</th>
 <th>Cliente</th>
-<th>Colaborador</th>
+<th>Operador</th>
 <th>Nível</th>
 <th>Ação</th>
 </tr>
@@ -106,13 +145,17 @@ N4: {{ n4 }} |
 <td>{{ r["cliente"] }}</td>
 <td>{{ r["colaborador"] }}</td>
 <td>{{ r["nivel"] }}</td>
-<td><a href="/excluir/{{ r['id'] }}">Excluir</a></td>
+<td>
+<a href="/excluir/{{ r['id'] }}" style="color:red;">Excluir</a>
+</td>
 </tr>
 {% endfor %}
 
 </table>
+
 </div>
 
 </div>
+
 </body>
 </html>
