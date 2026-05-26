@@ -1,40 +1,84 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <title>Clientes</title>
 
 <style>
-body {margin:0;font-family:Arial;display:flex;background:#f1f5f9;}
-.sidebar {width:220px;background:#0f172a;color:white;height:100vh;padding:20px;position:fixed;}
-.sidebar a {display:block;color:white;margin:10px 0;text-decoration:none;padding:10px;}
-.main {margin-left:240px;padding:20px;width:100%;}
-.box {background:white;padding:20px;border-radius:10px;}
+body {
+    margin:0;
+    font-family: Arial;
+    display:flex;
+}
+
+.sidebar {
+    width:220px;
+    background:#0f172a;
+    color:white;
+    height:100vh;
+    padding:20px;
+}
+
+.sidebar a {
+    display:block;
+    color:white;
+    text-decoration:none;
+    margin:10px 0;
+}
+
+.content {
+    flex:1;
+    padding:20px;
+    background:#f1f5f9;
+}
+
+.card {
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
 </style>
 </head>
 
 <body>
 
 <div class="sidebar">
-    <h2>OPSEG</h2>
-    <a href="/">Dashboard</a>
-    <a href="/grafico">Gráficos</a>
-    <a href="/usuarios">Usuários</a>
-    <a href="/clientes">Clientes</a>
-    <a href="/logout">Sair</a>
+<h2>OPSEG</h2>
+<a href="/">Dashboard</a>
+<a href="/clientes">Clientes</a>
+<a href="/usuarios">Cadastrar Usuário</a>
+<a href="/logout">Sair</a>
 </div>
 
-<div class="main">
-<div class="box">
+<div class="content">
 
-<h2>Cadastrar Cliente</h2>
+<h2>Cadastro de Clientes</h2>
 
+<div class="card">
 <form method="POST">
 <input name="nome" placeholder="Nome do cliente" required>
-<button>Cadastrar</button>
+<button>Salvar</button>
 </form>
-
-</div>
 </div>
 
+<div class="card">
+<h3>Lista de Clientes</h3>
+
+<table border="1" width="100%">
+<tr>
+<th>Nome</th>
+</tr>
+
+{% for c in clientes %}
+<tr>
+<td>{{ c["nome"] }}</td>
+</tr>
+{% endfor %}
+
+</table>
+</div>
+
+</div>
 </body>
 </html>

@@ -1,47 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <title>Usuários</title>
 
 <style>
-body {margin:0;font-family:Arial;display:flex;background:#f1f5f9;}
-.sidebar {width:220px;background:#0f172a;color:white;height:100vh;padding:20px;position:fixed;}
-.sidebar a {display:block;color:white;margin:10px 0;text-decoration:none;padding:10px;}
-.main {margin-left:240px;padding:20px;width:100%;}
-.box {background:white;padding:20px;border-radius:10px;}
+body {
+    margin:0;
+    font-family: Arial;
+    display:flex;
+}
+
+.sidebar {
+    width:220px;
+    background:#0f172a;
+    color:white;
+    height:100vh;
+    padding:20px;
+}
+
+.sidebar a {
+    display:block;
+    color:white;
+    text-decoration:none;
+    margin:10px 0;
+}
+
+.content {
+    flex:1;
+    padding:20px;
+    background:#f1f5f9;
+}
+
+.card {
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
 </style>
 </head>
 
 <body>
 
 <div class="sidebar">
-    <h2>OPSEG</h2>
-    <a href="/">Dashboard</a>
-    <a href="/grafico">Gráficos</a>
-    <a href="/usuarios">Usuários</a>
-    <a href="/clientes">Clientes</a>
-    <a href="/logout">Sair</a>
+<h2>OPSEG</h2>
+<a href="/">Dashboard</a>
+<a href="/clientes">Clientes</a>
+<a href="/usuarios">Cadastrar Usuário</a>
+<a href="/logout">Sair</a>
 </div>
 
-<div class="main">
-<div class="box">
+<div class="content">
 
-<h2>Cadastrar Usuário</h2>
+<h2>Cadastro de Usuários</h2>
 
+<div class="card">
 <form method="POST">
-<input name="username" placeholder="Usuário" required>
+<input name="username" placeholder="Login" required>
 <input name="password" placeholder="Senha" required>
-
-<select name="tipo">
-<option value="admin">Admin</option>
-<option value="normal">Normal</option>
-</select>
-
-<button>Cadastrar</button>
+<button>Salvar</button>
 </form>
-
-</div>
 </div>
 
+<div class="card">
+<h3>Lista de Usuários</h3>
+
+<table border="1" width="100%">
+<tr>
+<th>Login</th>
+</tr>
+
+{% for u in usuarios %}
+<tr>
+<td>{{ u["username"] }}</td>
+</tr>
+{% endfor %}
+
+</table>
+</div>
+
+</div>
 </body>
 </html>
