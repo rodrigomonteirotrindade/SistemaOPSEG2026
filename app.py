@@ -1,81 +1,143 @@
-from flask import Flask, render_template, request, redirect
-import pandas as pd
-import os
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sistema OPSEG</title>
 
-# LOGIN
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
+    <style>
+        body {
+            font-family: Arial;
+            background-color: #f4f6f8;
+            padding: 20px;
+        }
 
-app = Flask(__name__)
-app.secret_key = "segredo123"
+        h2 {
+            color: #333;
+        }
 
-# CONFIG LOGIN
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "login"
+        h3 {
+            margin-top: 20px;
+        }
 
-# USUÁRIO FIXO
-class User(UserMixin):
-    def __init__(self, id):
-        self.id = id
+        form {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            width: 300px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
 
-users = {
-    "liderseg": {"password": "evt123456"}
-}
+        input {
+            width: 95%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User(user_id)
+        button {
+            padding: 10px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+        }
 
-# ARQUIVO EXCEL
-arquivo = "registros.xlsx"
+        button:hover {
+            background: #0056b3;
+        }
 
-if not os.path.exists(arquivo):
-    df = pd.DataFrame(columns=["Data", "Cliente", "Colaborador"])
-    df.to_excel(arquivo, index=False)
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+            background: white;
+        }
 
-# LOGIN
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+        table, th, td {
+            border: 1px solid #ccc;
+        }
 
-        if username in users and users[username]["password"] == password:
-            user = User(username)
-            login_user(user)
-            return redirect("/")  # IMPORTANTE
+        th {
+            background: #007BFF;
+            color: white;
+        }
 
-    return render_template("login.html")
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
 
-# LOGOUT
-@app.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    return redirect("/login")
+        .topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-# TELA PRINCIPAL
-@app.route("/", methods=["GET", "POST"])
-@login_required
-def index():
-    if request.method == "POST":
-        data = request.form["data"]
-        cliente = request.form["cliente"]
-        colaborador = request.form["colaborador"]
+        .logout {
+            text-decoration: none;
+            background: red;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
 
-        df = pd.read_excel(arquivo)
-        novo = pd.DataFrame([[data, cliente, colaborador]], columns=df.columns)
-        df = pd.concat([df, novo], ignore_index=True)
-        df.to_excel(arquivo, index=False)
+        .logout:hover {
+            background: darkred;
+        }
 
-        return redirect("/")
+        .delete {
+            background: red;
+            color: white;
+            padding: 5px 8px;
+            text-decoration: none;
+            border-radius: 4px;
+        }
 
-    df = pd.read_excel(arquivo)
-    registros = df.to_dict(orient="records")
+        .delete:hover {
+            background: darkred;
+        }
+    </style>
+</head>
 
-    return render_template("index.html", registros=registros)
+<body>
 
-# RENDER
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+<div class="topo">
+    <h2>Sistema OPSEG</h2>
+    <a href="/logout" class="logout">Sair</a>
+</div>
+
+<h3>Cadastro</h3>
+
+<form method="POST">
+    <input type="date" name="data" required>
+    <input type="text" name="cliente" placeholder="Cliente" required>
+    <input type="text" name="colaborador" placeholder="Colaborador" required>
+    <button type="submit">Salvar</button>
+</form>
+
+<h3>Registros</h3>
+
+<table>
+    <tr>
+        <th>#</th>
+        <th>Data</th>
+        <th>Cliente</th>
+        <th>Colaborador</th>
+        <th>Ação</th>
+    </tr>
+
+    {% for r in registros %}
+    <tr>
+        <td>{{ loop.index0 }}</td>
+        <td>{{ r["Data"] }}</td>
+        <td>{{ r["Cliente"] }}</td>
+        <td>{{ r["Colaborador"] }}</td>
+        <td>
+            <a href="/delete/{{ loop.index0 }}" class="delete">Excluir</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>
