@@ -282,13 +282,19 @@ def grafico():
     n3 = len([x for x in dados if x["nivel"] == "3"])
     n4 = len([x for x in dados if x["nivel"] == "4"])
 
-    total = (n1*1.99)+(n2*2.99)+(n3*4.99)+(n4*7.99)
+    v1 = round(n1 * 1.99, 2)
+    v2 = round(n2 * 2.99, 2)
+    v3 = round(n3 * 4.99, 2)
+    v4 = round(n4 * 7.99, 2)
+
+    total = round(v1 + v2 + v3 + v4, 2)
 
     conn.close()
 
     return render_template("grafico.html",
         n1=n1,n2=n2,n3=n3,n4=n4,
-        total=round(total,2),
+        v1=v1,v2=v2,v3=v3,v4=v4,
+        total=total,
         usuario=current_user.id
     )
 

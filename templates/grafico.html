@@ -1,54 +1,54 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Gráfico</title>
+@app.route("/grafico", methods=["GET"])
+@login_required
+def grafico():
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    conn = get_db()
+    c = conn.cursor()
 
-<style>
-body { font-family: Arial; background:#f1f5f9; padding:20px; }
-.card { background:#fff; padding:20px; border-radius:10px; width:350px; }
-</style>
+    # 🔽 operador vindo do select
+    operador = request.args.get("operador")
 
-</head>
+    # 🔐 REGRA DE PERMISSÃO
+    if is_admin():
+        if operador:
+            c.execute("SELECT * FROM registros WHERE colaborador=?", (operador,))
+        else:
+            c.execute("SELECT * FROM registros")
+    else:
+        operador = current_user.id
+        c.execute("SELECT * FROM registros WHERE colaborador=?", (operador,))
 
-<body>
+    dados = c.fetchall()
 
-<h2>Gráfico - {{ usuario }}</h2>
+    # 📊 CONTAGEM POR NÍVEL
+    n1 = len([x for x in dados if x["nivel"] == "1"])
+    n2 = len([x for x in dados if x["nivel"] == "2"])
+    n3 = len([x for x in dados if x["nivel"] == "3"])
+    n4 = len([x for x in dados if x["nivel"] == "4"])
 
-<div class="card">
-<canvas id="grafico"></canvas>
-</div>
+    # 💰 VALORES
+    v1 = round(n1 * 1.99, 2)
+    v2 = round(n2 * 2.99, 2)
+    v3 = round(n3 * 4.99, 2)
+    v4 = round(n4 * 7.99, 2)
 
-<script>
-new Chart(document.getElementById("grafico"), {
-type: 'pie',
-data: {
-labels: ["N1","N2","N3","N4"],
-datasets: [{
-data: [{{n1}},{{n2}},{{n3}},{{n4}}],
-backgroundColor:["green","yellow","orange","red"]
-}]
-}
-});
-</script>
+    total = round(v1 + v2 + v3 + v4, 2)
 
-<br>
+    # 👥 LISTA DE OPERADORES (APENAS PARA ADMIN)
+    if is_admin():
+        c.execute("SELECT username FROM usuarios WHERE tipo='operador'")
+        operadores = [x["username"] for x in c.fetchall()]
+    else:
+        operadores = []
 
-<h3>Valores:</h3>
+    conn.close()
 
-<p>N1: {{n1}} → R$ {{v1}}</p>
-<p>N2: {{n2}} → R$ {{v2}}</p>
-<p>N3: {{n3}} → R$ {{v3}}</p>
-<p>N4: {{n4}} → R$ {{v4}}</p>
-
-<hr>
-
-<h2>Total: R$ {{ total }}</h2>
-
-<br>
-<a href="/">⬅ Voltar</a>
-
-</body>
-</html>
+    return render_template(
+        "grafico.html",
+        n1=n1, n2=n2, n3=n3, n4=n4,
+        v1=v1, v2=v2, v3=v3, v4=v4,
+        total=total,
+        operadores=operadores,
+        operador_selecionado=operador,
+        is_admin=is_admin()
+    )
