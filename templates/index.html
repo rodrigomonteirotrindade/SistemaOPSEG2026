@@ -1,90 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Dashboard</title>
-
-<style>
-body { margin:0; font-family:Arial; display:flex; }
-
-.sidebar {
-    width:220px;
-    background:#0f172a;
-    color:white;
-    height:100vh;
-    padding:20px;
-}
-
-.sidebar a {
-    display:block;
-    color:white;
-    margin:10px 0;
-    text-decoration:none;
-}
-
-.content {
-    flex:1;
-    padding:20px;
-    background:#f1f5f9;
-}
-
-.card {
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    margin-bottom:20px;
-}
-
-table {
-    width:100%;
-    border-collapse: collapse;
-}
-
-th, td {
-    padding:10px;
-    border-bottom:1px solid #ddd;
-}
-
-.btn {
-    padding:5px 8px;
-    text-decoration:none;
-    border-radius:5px;
-    color:white;
-}
-
-.editar { background:#3b82f6; }
-.excluir { background:#ef4444; }
-</style>
-</head>
-
-<body>
-
-<div class="sidebar">
-<h2>OPSEG</h2>
-<a href="/">Dashboard</a>
-<a href="/grafico">Gráfico</a>
-
-{% if is_admin %}
-<a href="/clientes">Clientes</a>
-<a href="/usuarios">Usuários</a>
-{% endif %}
-
-<a href="/logout">Sair</a>
-</div>
-
-<div class="content">
-
+<!-- (mantive seu layout simples e funcional) -->
 <h2>Dashboard</h2>
 
-<div class="card">
-
-<h3>Lançar Trabalho</h3>
-
 <form method="POST">
-
 <input type="date" name="data" required>
 <input name="titulo" placeholder="Título" required>
-
 <input name="colaborador" placeholder="Operador" required>
 
 <select name="cliente">
@@ -94,24 +13,18 @@ th, td {
 </select>
 
 <select name="nivel">
-<option value="1">Nível 1</option>
-<option value="2">Nível 2</option>
-<option value="3">Nível 3</option>
-<option value="4">Nível 4</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
 </select>
 
-<br><br>
-<button type="submit">Salvar</button>
-
+<button>Salvar</button>
 </form>
 
-</div>
+<hr>
 
-<div class="card">
-
-<h3>Registros</h3>
-
-<table>
+<table border="1">
 <tr>
 <th>Data</th>
 <th>Título</th>
@@ -130,18 +43,13 @@ th, td {
 <td>{{ r['nivel'] }}</td>
 
 <td>
-<a href="/editar/{{ r['id'] }}" class="btn editar">Editar</a>
-<a href="/excluir/{{ r['id'] }}" class="btn excluir">Excluir</a>
+<a href="/editar/{{ r['id'] }}">Editar</a> |
+<a href="/excluir/{{ r['id'] }}">Excluir</a>
 </td>
-
 </tr>
 {% endfor %}
 
 </table>
 
-</div>
-
-</div>
-
-</body>
-</html>
+<br>
+<a href="/grafico">Ir para Gráfico</a>

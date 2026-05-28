@@ -64,6 +64,7 @@ def load_user(user_id):
     c.execute("SELECT * FROM usuarios WHERE username=?", (user_id,))
     user = c.fetchone()
     conn.close()
+
     if user:
         return User(user["username"], user["tipo"])
     return None
@@ -74,8 +75,8 @@ def is_admin():
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "POST":
-        u = request.form["username"]
-        s = request.form["password"]
+        u = request.form.get("username")
+        s = request.form.get("password")
 
         conn = get_db()
         c = conn.cursor()
@@ -108,11 +109,11 @@ def index():
         INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
         VALUES (?,?,?,?,?)
         """, (
-            request.form["data"],
-            request.form["titulo"],
-            request.form["cliente"],
-            request.form["colaborador"],
-            request.form["nivel"]
+            request.form.get("data"),
+            request.form.get("titulo"),
+            request.form.get("cliente"),
+            request.form.get("colaborador"),
+            request.form.get("nivel")
         ))
         conn.commit()
 
@@ -149,25 +150,29 @@ def editar(id):
     conn = get_db()
     c = conn.cursor()
 
+    c.execute("SELECT * FROM registros WHERE id=?", (id,))
+    r = c.fetchone()
+
+    if not r:
+        conn.close()
+        return "Registro não encontrado"
+
     if request.method == "POST":
         c.execute("""
         UPDATE registros SET
         data=?, titulo=?, cliente=?, colaborador=?, nivel=?
         WHERE id=?
         """, (
-            request.form["data"],
-            request.form["titulo"],
-            request.form["cliente"],
-            request.form["colaborador"],
-            request.form["nivel"],
+            request.form.get("data"),
+            request.form.get("titulo"),
+            request.form.get("cliente"),
+            request.form.get("colaborador"),
+            request.form.get("nivel"),
             id
         ))
         conn.commit()
         conn.close()
         return redirect("/")
-
-    c.execute("SELECT * FROM registros WHERE id=?", (id,))
-    r = c.fetchone()
 
     c.execute("SELECT nome FROM clientes")
     clientes = [x["nome"] for x in c.fetchall()]
@@ -188,8 +193,10 @@ def clientes():
     c = conn.cursor()
 
     if request.method == "POST":
-        c.execute("INSERT INTO clientes VALUES (?)", (request.form["nome"],))
-        conn.commit()
+        nome = request.form.get("nome")
+        if nome:
+            c.execute("INSERT INTO clientes VALUES (?)", (nome,))
+            conn.commit()
 
     c.execute("SELECT * FROM clientes")
     lista = c.fetchall()
@@ -209,9 +216,14 @@ def usuarios():
     c = conn.cursor()
 
     if request.method == "POST":
-        c.execute("INSERT INTO usuarios VALUES (?,?,?)",
-                  (request.form["username"], request.form["password"], request.form["tipo"]))
-        conn.commit()
+        username = request.form.get("username")
+        password = request.form.get("password")
+        tipo = request.form.get("tipo")
+
+        if username and password and tipo:
+            c.execute("INSERT INTO usuarios VALUES (?,?,?)",
+                      (username, password, tipo))
+            conn.commit()
 
     c.execute("SELECT * FROM usuarios")
     lista = c.fetchall()

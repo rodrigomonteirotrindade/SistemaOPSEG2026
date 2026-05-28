@@ -1,0 +1,26 @@
+<h2>Editar Registro</h2>
+
+<form method="POST">
+<input type="date" name="data" value="{{ r['data'] }}">
+<input name="titulo" value="{{ r['titulo'] }}">
+<input name="colaborador" value="{{ r['colaborador'] }}">
+
+<select name="cliente">
+{% for c in clientes %}
+<option value="{{ c }}" {% if c == r['cliente'] %}selected{% endif %}>
+{{ c }}
+</option>
+{% endfor %}
+</select>
+
+<select name="nivel">
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
+</select>
+
+<button>Salvar</button>
+</form>
+
+<a href="/">Voltar</a>

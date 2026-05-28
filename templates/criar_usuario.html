@@ -1,23 +1,21 @@
-<!DOCTYPE html>
-<html>
-<body>
-
-<div style="background:#0f172a;padding:10px;">
-    <a href="/" style="color:white;">⬅ Dashboard</a>
-</div>
-
 <h2>Cadastrar Usuário</h2>
 
 <form method="POST">
-<input name="username" placeholder="Usuário">
+<input name="username" placeholder="Login">
 <input name="password" placeholder="Senha">
+
 <select name="tipo">
+<option value="usuario">Usuário</option>
 <option value="admin">Admin</option>
-<option value="normal">Normal</option>
 </select>
 
 <button>Cadastrar</button>
 </form>
 
-</body>
-</html>
+<hr>
+
+{% for u in usuarios %}
+<p>{{ u['username'] }} - {{ u['tipo'] }}</p>
+{% endfor %}
+
+<a href="/">Voltar</a>
