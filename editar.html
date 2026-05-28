@@ -18,7 +18,7 @@
 <input name="titulo" value="{{ r['titulo'] }}"><br><br>
 
 <label>Operador</label><br>
-<input name="colaborador" value="{{ r['colaborador'] }}"><br><br>
+<input name="colaborador" value="{{ r['colaborador'] }}" {% if not is_admin %}readonly{% endif %}>
 
 <label>Cliente</label><br>
 <select name="cliente">
