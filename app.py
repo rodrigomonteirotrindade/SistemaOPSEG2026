@@ -40,6 +40,7 @@ def criar_banco():
     )
     """)
 
+    # Admin padrão
     c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','evt123456','admin')")
 
     conn.commit()
@@ -72,6 +73,7 @@ def load_user(user_id):
 def is_admin():
     return current_user.tipo == "admin"
 
+# ================= LOGIN =================
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "POST":
@@ -104,6 +106,7 @@ def index():
     conn = get_db()
     c = conn.cursor()
 
+    # TODOS podem lançar trabalho
     if request.method == "POST":
         c.execute("""
         INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
@@ -131,21 +134,29 @@ def index():
         is_admin=is_admin()
     )
 
-# ================= EXCLUIR =================
+# ================= EXCLUIR (SÓ ADMIN) =================
 @app.route("/excluir/<int:id>")
 @login_required
 def excluir(id):
+
+    if not is_admin():
+        return "Acesso negado"
+
     conn = get_db()
     c = conn.cursor()
     c.execute("DELETE FROM registros WHERE id=?", (id,))
     conn.commit()
     conn.close()
+
     return redirect("/")
 
-# ================= EDITAR =================
+# ================= EDITAR (SÓ ADMIN) =================
 @app.route("/editar/<int:id>", methods=["GET","POST"])
 @login_required
 def editar(id):
+
+    if not is_admin():
+        return "Acesso negado"
 
     conn = get_db()
     c = conn.cursor()
@@ -181,7 +192,7 @@ def editar(id):
 
     return render_template("editar.html", r=r, clientes=clientes)
 
-# ================= CLIENTES =================
+# ================= CLIENTES (SÓ ADMIN) =================
 @app.route("/clientes", methods=["GET","POST"])
 @login_required
 def clientes():
@@ -204,7 +215,7 @@ def clientes():
     conn.close()
     return render_template("clientes.html", clientes=lista)
 
-# ================= USUÁRIOS =================
+# ================= USUÁRIOS (SÓ ADMIN) =================
 @app.route("/usuarios", methods=["GET","POST"])
 @login_required
 def usuarios():
