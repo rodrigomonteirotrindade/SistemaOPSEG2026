@@ -5,11 +5,7 @@
 <title>Dashboard</title>
 
 <style>
-body {
-    margin:0;
-    font-family:Arial;
-    display:flex;
-}
+body { margin:0; font-family:Arial; display:flex; }
 
 .sidebar {
     width:220px;
@@ -34,76 +30,68 @@ body {
 
 .card {
     background:white;
-    padding:15px;
+    padding:20px;
     border-radius:10px;
-    margin-bottom:15px;
+    margin-bottom:20px;
 }
 
-button {
-    padding:8px;
-    border:none;
-    background:#3b82f6;
-    color:white;
+table {
+    width:100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding:10px;
+    border-bottom:1px solid #ddd;
+}
+
+.btn {
+    padding:5px 8px;
+    text-decoration:none;
     border-radius:5px;
-    cursor:pointer;
+    color:white;
 }
 
-input, select {
-    padding:8px;
-    margin:5px;
-}
+.editar { background:#3b82f6; }
+.excluir { background:#ef4444; }
 </style>
 </head>
 
 <body>
 
-<!-- MENU LATERAL -->
 <div class="sidebar">
 <h2>OPSEG</h2>
-
 <a href="/">Dashboard</a>
-<a href="/grafico">📊 Gráfico</a>
-<a href="/clientes">Clientes</a>
-<a href="/usuarios">Cadastrar Usuário</a>
-<a href="/logout">Sair</a>
+<a href="/grafico">Gráfico</a>
 
+{% if is_admin %}
+<a href="/clientes">Clientes</a>
+<a href="/usuarios">Usuários</a>
+{% endif %}
+
+<a href="/logout">Sair</a>
 </div>
 
-<!-- CONTEÚDO -->
 <div class="content">
 
-<h2>Dashboard Operacional</h2>
+<h2>Dashboard</h2>
 
-<!-- RESUMO -->
-<div class="card">
-<strong>Total:</strong> {{ total }} |
-<strong>N1:</strong> {{ n1 }} |
-<strong>N2:</strong> {{ n2 }} |
-<strong>N3:</strong> {{ n3 }} |
-<strong>N4:</strong> {{ n4 }} |
-💰 <strong>R$ {{ total_valor }}</strong>
-</div>
-
-<!-- FORMULÁRIO -->
 <div class="card">
 
-<h3>Novo Lançamento</h3>
+<h3>Lançar Trabalho</h3>
 
 <form method="POST">
 
 <input type="date" name="data" required>
+<input name="titulo" placeholder="Título" required>
 
-<input name="titulo" placeholder="Título do trabalho" required>
+<input name="colaborador" placeholder="Operador" required>
 
-<!-- CLIENTE FUNCIONANDO -->
-<select name="cliente" required>
-<option value="">Selecione o cliente</option>
+<select name="cliente">
 {% for c in clientes %}
 <option value="{{ c }}">{{ c }}</option>
 {% endfor %}
 </select>
-
-<input name="colaborador" placeholder="Operador" required>
 
 <select name="nivel">
 <option value="1">Nível 1</option>
@@ -113,41 +101,39 @@ input, select {
 </select>
 
 <br><br>
-
 <button type="submit">Salvar</button>
 
 </form>
 
 </div>
 
-<!-- TABELA -->
 <div class="card">
 
 <h3>Registros</h3>
 
-<table border="1" width="100%">
-
+<table>
 <tr>
-<th>ID</th>
 <th>Data</th>
 <th>Título</th>
 <th>Cliente</th>
 <th>Operador</th>
 <th>Nível</th>
-<th>Ação</th>
+<th>Ações</th>
 </tr>
 
 {% for r in registros %}
 <tr>
-<td>{{ r["id"] }}</td>
-<td>{{ r["data"] }}</td>
-<td>{{ r["titulo"] }}</td>
-<td>{{ r["cliente"] }}</td>
-<td>{{ r["colaborador"] }}</td>
-<td>{{ r["nivel"] }}</td>
+<td>{{ r['data'] }}</td>
+<td>{{ r['titulo'] }}</td>
+<td>{{ r['cliente'] }}</td>
+<td>{{ r['colaborador'] }}</td>
+<td>{{ r['nivel'] }}</td>
+
 <td>
-<a href="/excluir/{{ r['id'] }}" style="color:red;">Excluir</a>
+<a href="/editar/{{ r['id'] }}" class="btn editar">Editar</a>
+<a href="/excluir/{{ r['id'] }}" class="btn excluir">Excluir</a>
 </td>
+
 </tr>
 {% endfor %}
 

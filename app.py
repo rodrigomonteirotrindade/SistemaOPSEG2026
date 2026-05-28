@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect
 import sqlite3
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 app = Flask(__name__)
 app.secret_key = "segredo123"
@@ -18,7 +18,8 @@ def criar_banco():
     c.execute("""
     CREATE TABLE IF NOT EXISTS usuarios (
         username TEXT PRIMARY KEY,
-        password TEXT
+        password TEXT,
+        tipo TEXT
     )
     """)
 
@@ -39,7 +40,7 @@ def criar_banco():
     )
     """)
 
-    c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','evt123456')")
+    c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','evt123456','admin')")
 
     conn.commit()
     conn.close()
@@ -52,8 +53,9 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 class User(UserMixin):
-    def __init__(self, username):
+    def __init__(self, username, tipo):
         self.id = username
+        self.tipo = tipo
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -63,8 +65,11 @@ def load_user(user_id):
     user = c.fetchone()
     conn.close()
     if user:
-        return User(user["username"])
+        return User(user["username"], user["tipo"])
     return None
+
+def is_admin():
+    return current_user.tipo == "admin"
 
 @app.route("/login", methods=["GET","POST"])
 def login():
@@ -79,7 +84,7 @@ def login():
         conn.close()
 
         if user:
-            login_user(User(user["username"]))
+            login_user(User(user["username"], user["tipo"]))
             return redirect("/")
 
     return render_template("login.html")
@@ -119,20 +124,10 @@ def index():
 
     conn.close()
 
-    total = len(registros)
-    n1 = len([r for r in registros if r["nivel"] == "1"])
-    n2 = len([r for r in registros if r["nivel"] == "2"])
-    n3 = len([r for r in registros if r["nivel"] == "3"])
-    n4 = len([r for r in registros if r["nivel"] == "4"])
-
-    total_valor = (n1*1.99 + n2*2.99 + n3*4.99 + n4*7.99)
-
     return render_template("index.html",
         registros=registros,
         clientes=clientes,
-        total=total,
-        n1=n1,n2=n2,n3=n3,n4=n4,
-        total_valor=round(total_valor,2)
+        is_admin=is_admin()
     )
 
 # ================= EXCLUIR =================
@@ -146,10 +141,49 @@ def excluir(id):
     conn.close()
     return redirect("/")
 
+# ================= EDITAR =================
+@app.route("/editar/<int:id>", methods=["GET","POST"])
+@login_required
+def editar(id):
+
+    conn = get_db()
+    c = conn.cursor()
+
+    if request.method == "POST":
+        c.execute("""
+        UPDATE registros SET
+        data=?, titulo=?, cliente=?, colaborador=?, nivel=?
+        WHERE id=?
+        """, (
+            request.form["data"],
+            request.form["titulo"],
+            request.form["cliente"],
+            request.form["colaborador"],
+            request.form["nivel"],
+            id
+        ))
+        conn.commit()
+        conn.close()
+        return redirect("/")
+
+    c.execute("SELECT * FROM registros WHERE id=?", (id,))
+    r = c.fetchone()
+
+    c.execute("SELECT nome FROM clientes")
+    clientes = [x["nome"] for x in c.fetchall()]
+
+    conn.close()
+
+    return render_template("editar.html", r=r, clientes=clientes)
+
 # ================= CLIENTES =================
 @app.route("/clientes", methods=["GET","POST"])
 @login_required
 def clientes():
+
+    if not is_admin():
+        return "Acesso negado"
+
     conn = get_db()
     c = conn.cursor()
 
@@ -167,12 +201,16 @@ def clientes():
 @app.route("/usuarios", methods=["GET","POST"])
 @login_required
 def usuarios():
+
+    if not is_admin():
+        return "Acesso negado"
+
     conn = get_db()
     c = conn.cursor()
 
     if request.method == "POST":
-        c.execute("INSERT INTO usuarios VALUES (?,?)",
-                  (request.form["username"], request.form["password"]))
+        c.execute("INSERT INTO usuarios VALUES (?,?,?)",
+                  (request.form["username"], request.form["password"], request.form["tipo"]))
         conn.commit()
 
     c.execute("SELECT * FROM usuarios")
