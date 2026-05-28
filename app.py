@@ -40,7 +40,6 @@ def criar_banco():
     )
     """)
 
-    # Admin padrão
     c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','evt123456','admin')")
 
     conn.commit()
@@ -106,7 +105,6 @@ def index():
     conn = get_db()
     c = conn.cursor()
 
-    # TODOS podem lançar trabalho
     if request.method == "POST":
         c.execute("""
         INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
@@ -134,7 +132,7 @@ def index():
         is_admin=is_admin()
     )
 
-# ================= EXCLUIR (SÓ ADMIN) =================
+# ================= EXCLUIR =================
 @app.route("/excluir/<int:id>")
 @login_required
 def excluir(id):
@@ -150,7 +148,7 @@ def excluir(id):
 
     return redirect("/")
 
-# ================= EDITAR (SÓ ADMIN) =================
+# ================= EDITAR =================
 @app.route("/editar/<int:id>", methods=["GET","POST"])
 @login_required
 def editar(id):
@@ -164,23 +162,25 @@ def editar(id):
     c.execute("SELECT * FROM registros WHERE id=?", (id,))
     r = c.fetchone()
 
-    if not r:
+    if r is None:
         conn.close()
-        return "Registro não encontrado"
+        return f"Erro: ID {id} não encontrado"
+
+    r = dict(r)
 
     if request.method == "POST":
+        data = request.form.get("data")
+        titulo = request.form.get("titulo")
+        cliente = request.form.get("cliente")
+        colaborador = request.form.get("colaborador")
+        nivel = request.form.get("nivel")
+
         c.execute("""
         UPDATE registros SET
         data=?, titulo=?, cliente=?, colaborador=?, nivel=?
         WHERE id=?
-        """, (
-            request.form.get("data"),
-            request.form.get("titulo"),
-            request.form.get("cliente"),
-            request.form.get("colaborador"),
-            request.form.get("nivel"),
-            id
-        ))
+        """, (data, titulo, cliente, colaborador, nivel, id))
+
         conn.commit()
         conn.close()
         return redirect("/")
@@ -192,7 +192,7 @@ def editar(id):
 
     return render_template("editar.html", r=r, clientes=clientes)
 
-# ================= CLIENTES (SÓ ADMIN) =================
+# ================= CLIENTES =================
 @app.route("/clientes", methods=["GET","POST"])
 @login_required
 def clientes():
@@ -215,7 +215,7 @@ def clientes():
     conn.close()
     return render_template("clientes.html", clientes=lista)
 
-# ================= USUÁRIOS (SÓ ADMIN) =================
+# ================= USUÁRIOS =================
 @app.route("/usuarios", methods=["GET","POST"])
 @login_required
 def usuarios():
@@ -241,51 +241,6 @@ def usuarios():
 
     conn.close()
     return render_template("usuarios.html", usuarios=lista)
-
-# ================= GRÁFICO =================
-@app.route("/grafico")
-@login_required
-def grafico():
-
-    operador = request.args.get("operador")
-
-    conn = get_db()
-    c = conn.cursor()
-
-    if operador and operador != "todos":
-        c.execute("SELECT * FROM registros WHERE colaborador=?", (operador,))
-    else:
-        c.execute("SELECT * FROM registros")
-
-    registros = c.fetchall()
-
-    n1 = len([r for r in registros if r["nivel"] == "1"])
-    n2 = len([r for r in registros if r["nivel"] == "2"])
-    n3 = len([r for r in registros if r["nivel"] == "3"])
-    n4 = len([r for r in registros if r["nivel"] == "4"])
-
-    valor_n1 = n1 * 1.99
-    valor_n2 = n2 * 2.99
-    valor_n3 = n3 * 4.99
-    valor_n4 = n4 * 7.99
-
-    total_valor = valor_n1 + valor_n2 + valor_n3 + valor_n4
-
-    c.execute("SELECT DISTINCT colaborador FROM registros")
-    operadores = [x["colaborador"] for x in c.fetchall()]
-
-    conn.close()
-
-    return render_template("grafico.html",
-        n1=n1,n2=n2,n3=n3,n4=n4,
-        valor_n1=round(valor_n1,2),
-        valor_n2=round(valor_n2,2),
-        valor_n3=round(valor_n3,2),
-        valor_n4=round(valor_n4,2),
-        total_valor=round(total_valor,2),
-        operadores=operadores,
-        operador=operador
-    )
 
 # ================= RUN =================
 if __name__ == "__main__":
