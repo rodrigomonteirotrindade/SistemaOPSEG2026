@@ -5,65 +5,50 @@
 <title>Usuários</title>
 
 <style>
-body { font-family: Arial; padding:20px; background:#f1f5f9; }
-
-.container {
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    width:400px;
-    margin:auto;
-}
-
-input, select {
-    width:100%;
-    padding:8px;
-    margin:8px 0;
-}
-
-button {
-    width:100%;
-    padding:10px;
-    background:#22c55e;
-    color:white;
-    border:none;
-}
+body { font-family:Arial; background:#f1f5f9; padding:20px; }
+.card { background:#fff; padding:20px; border-radius:10px; }
 </style>
-
 </head>
 
 <body>
 
-<div class="container">
+<h2>Usuários</h2>
 
-<h2>Cadastrar Usuário</h2>
+<div class="card">
 
 <form method="POST">
-
-<input name="username" placeholder="Login" required>
+<input name="username" placeholder="Usuário" required>
 <input name="password" placeholder="Senha" required>
 
-<select name="tipo" required>
-<option value="usuario">Usuário</option>
-<option value="admin">Administrador</option>
+<select name="tipo">
+<option value="admin">Admin</option>
+<option value="operador">Operador</option>
 </select>
 
-<button type="submit">Cadastrar</button>
-
+<button>Criar</button>
 </form>
 
-<hr>
+<br>
 
-<h3>Usuários cadastrados</h3>
+<table border="1" width="100%">
+<tr>
+<th>Usuário</th>
+<th>Tipo</th>
+</tr>
 
 {% for u in usuarios %}
-<p>{{ u['username'] }} - {{ u['tipo'] }}</p>
+<tr>
+<td>{{ u['username'] }}</td>
+<td>{{ u['tipo'] }}</td>
+</tr>
 {% endfor %}
+
+</table>
+
+</div>
 
 <br>
 <a href="/">⬅ Voltar</a>
-
-</div>
 
 </body>
 </html>

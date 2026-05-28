@@ -1,14 +1,45 @@
-<h2>Cadastrar Cliente</h2>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Clientes</title>
+
+<style>
+body { font-family:Arial; background:#f1f5f9; padding:20px; }
+.card { background:#fff; padding:20px; border-radius:10px; }
+</style>
+</head>
+
+<body>
+
+<h2>Clientes</h2>
+
+<div class="card">
 
 <form method="POST">
-<input name="nome" placeholder="Nome do cliente">
-<button>Cadastrar</button>
+<input name="nome" placeholder="Nome do cliente" required>
+<button>Adicionar</button>
 </form>
 
-<hr>
+<br>
+
+<table border="1" width="100%">
+<tr>
+<th>Nome</th>
+</tr>
 
 {% for c in clientes %}
-<p>{{ c['nome'] }}</p>
+<tr>
+<td>{{ c['nome'] }}</td>
+</tr>
 {% endfor %}
 
-<a href="/">Voltar</a>
+</table>
+
+</div>
+
+<br>
+<a href="/">⬅ Voltar</a>
+
+</body>
+</html>

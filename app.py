@@ -34,7 +34,8 @@ def criar_banco():
         nivel TEXT
     )""")
 
-    c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','evt123456','admin')")
+    # usuário padrão
+    c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','123','admin')")
 
     conn.commit()
     conn.close()
@@ -97,7 +98,7 @@ def index():
     conn = get_db()
     c = conn.cursor()
 
-    # 🔥 OPERADOR SÓ VÊ OS DELE
+    # 🔥 FILTRO POR USUÁRIO
     if is_admin():
         c.execute("SELECT * FROM registros ORDER BY id DESC")
     else:
@@ -144,25 +145,31 @@ def editar(id):
     r = c.fetchone()
 
     if not r:
+        conn.close()
         return "Registro não encontrado"
 
-    # 🔒 OPERADOR NÃO PODE EDITAR OUTROS
+    # 🔒 PERMISSÃO
     if not is_admin() and r["colaborador"] != current_user.id:
+        conn.close()
         return "Sem permissão"
 
     if request.method == "POST":
+        data = request.form["data"]
+        titulo = request.form["titulo"]
+        cliente = request.form["cliente"]
+        nivel = request.form["nivel"]
+
+        if is_admin():
+            colaborador = request.form["colaborador"]
+        else:
+            colaborador = current_user.id
+
         c.execute("""
         UPDATE registros SET
         data=?, titulo=?, cliente=?, colaborador=?, nivel=?
         WHERE id=?
-        """, (
-            request.form["data"],
-            request.form["titulo"],
-            request.form["cliente"],
-            request.form["colaborador"],
-            request.form["nivel"],
-            id
-        ))
+        """, (data, titulo, cliente, colaborador, nivel, id))
+
         conn.commit()
         conn.close()
         return redirect("/")
@@ -197,6 +204,64 @@ def excluir(id):
 
     return redirect("/")
 
+# ================= CLIENTES =================
+@app.route("/clientes", methods=["GET","POST"])
+@login_required
+def clientes():
+
+    if not is_admin():
+        return "Acesso negado"
+
+    conn = get_db()
+    c = conn.cursor()
+
+    if request.method == "POST":
+        nome = request.form.get("nome")
+        if nome:
+            try:
+                c.execute("INSERT INTO clientes VALUES (?)", (nome,))
+                conn.commit()
+            except:
+                pass
+
+    c.execute("SELECT * FROM clientes")
+    lista = c.fetchall()
+
+    conn.close()
+
+    return render_template("clientes.html", clientes=lista)
+
+# ================= USUÁRIOS =================
+@app.route("/usuarios", methods=["GET","POST"])
+@login_required
+def usuarios():
+
+    if not is_admin():
+        return "Acesso negado"
+
+    conn = get_db()
+    c = conn.cursor()
+
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        tipo = request.form.get("tipo")
+
+        if username and password and tipo:
+            try:
+                c.execute("INSERT INTO usuarios VALUES (?,?,?)",
+                          (username, password, tipo))
+                conn.commit()
+            except:
+                pass
+
+    c.execute("SELECT * FROM usuarios")
+    lista = c.fetchall()
+
+    conn.close()
+
+    return render_template("usuarios.html", usuarios=lista)
+
 # ================= GRÁFICO =================
 @app.route("/grafico")
 @login_required
@@ -205,7 +270,6 @@ def grafico():
     conn = get_db()
     c = conn.cursor()
 
-    # 🔥 FILTRO AUTOMÁTICO POR USUÁRIO
     if is_admin():
         c.execute("SELECT * FROM registros")
     else:
@@ -218,14 +282,13 @@ def grafico():
     n3 = len([x for x in dados if x["nivel"] == "3"])
     n4 = len([x for x in dados if x["nivel"] == "4"])
 
-    # 💰 VALORES
     total = (n1*1.99)+(n2*2.99)+(n3*4.99)+(n4*7.99)
 
     conn.close()
 
     return render_template("grafico.html",
         n1=n1,n2=n2,n3=n3,n4=n4,
-        total=total,
+        total=round(total,2),
         usuario=current_user.id
     )
 
