@@ -1,54 +1,87 @@
-@app.route("/grafico")
-@login_required
-def grafico():
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Gráfico</title>
 
-    conn = get_db()
-    c = conn.cursor()
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    operador = None  # 🔥 IMPORTANTE
+<style>
+body { font-family: Arial; background:#f1f5f9; padding:20px; }
 
-    # 🔐 SE FOR ADMIN
-    if is_admin():
-        operador = request.args.get("operador")
+.card {
+    background:#fff;
+    padding:20px;
+    border-radius:10px;
+    width:350px;
+}
 
-        if operador and operador != "todos":
-            c.execute("SELECT * FROM registros WHERE colaborador=?", (operador,))
-        else:
-            c.execute("SELECT * FROM registros")
-    else:
-        operador = current_user.id
-        c.execute("SELECT * FROM registros WHERE colaborador=?", (operador,))
+select {
+    padding:8px;
+    border-radius:5px;
+}
+</style>
+</head>
 
-    dados = c.fetchall()
+<body>
 
-    # 📊 CONTAGEM
-    n1 = len([x for x in dados if x["nivel"] == "1"])
-    n2 = len([x for x in dados if x["nivel"] == "2"])
-    n3 = len([x for x in dados if x["nivel"] == "3"])
-    n4 = len([x for x in dados if x["nivel"] == "4"])
+<h2>📊 Dashboard</h2>
 
-    # 💰 VALORES
-    v1 = round(n1 * 1.99, 2)
-    v2 = round(n2 * 2.99, 2)
-    v3 = round(n3 * 4.99, 2)
-    v4 = round(n4 * 7.99, 2)
+<!-- 🔥 AQUI ESTÁ O SELETOR -->
+{% if is_admin %}
+<form method="GET">
 
-    total = round(v1 + v2 + v3 + v4, 2)
+    <label><b>Selecionar Operador:</b></label><br><br>
 
-    # 👥 LISTA DE OPERADORES
-    operadores = []
-    if is_admin():
-        c.execute("SELECT DISTINCT colaborador FROM registros")
-        operadores = [x["colaborador"] for x in c.fetchall()]
+    <select name="operador" onchange="this.form.submit()">
+        <option value="todos">Todos</option>
 
-    conn.close()
+        {% for op in operadores %}
+        <option value="{{op}}"
+        {% if op == operador_selecionado %}selected{% endif %}>
+            {{op}}
+        </option>
+        {% endfor %}
 
-    return render_template(
-        "grafico.html",
-        n1=n1, n2=n2, n3=n3, n4=n4,
-        v1=v1, v2=v2, v3=v3, v4=v4,
-        total=total,
-        operadores=operadores,
-        operador_selecionado=operador,  # 🔥 CORREÇÃO AQUI
-        is_admin=is_admin()
-    )
+    </select>
+
+</form>
+{% endif %}
+
+<br><br>
+
+<div class="card">
+    <canvas id="grafico"></canvas>
+</div>
+
+<script>
+new Chart(document.getElementById("grafico"), {
+    type: 'pie',
+    data: {
+        labels: ["N1","N2","N3","N4"],
+        datasets: [{
+            data: [{{n1}},{{n2}},{{n3}},{{n4}}],
+            backgroundColor:["green","yellow","orange","red"]
+        }]
+    }
+});
+</script>
+
+<br>
+
+<h3>💰 Valores:</h3>
+
+<p>N1: {{n1}} → R$ {{v1}}</p>
+<p>N2: {{n2}} → R$ {{v2}}</p>
+<p>N3: {{n3}} → R$ {{v3}}</p>
+<p>N4: {{n4}} → R$ {{v4}}</p>
+
+<hr>
+
+<h2>💵 Total: R$ {{ total }}</h2>
+
+<br>
+<a href="/">⬅ Voltar</a>
+
+</body>
+</html>
