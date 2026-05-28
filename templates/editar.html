@@ -1,55 +1,67 @@
-@app.route("/editar/<int:id>", methods=["GET","POST"])
-@login_required
-def editar(id):
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Editar</title>
 
-    conn = get_db()
-    c = conn.cursor()
+<style>
+body {
+    font-family: Arial;
+    background: #f1f5f9;
+    padding: 20px;
+}
 
-    # 🔍 busca registro
-    c.execute("SELECT * FROM registros WHERE id=?", (id,))
-    r = c.fetchone()
+.card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    width: 400px;
+}
+</style>
+</head>
 
-    if not r:
-        conn.close()
-        return "Registro não encontrado"
+<body>
 
-    # 🔒 PERMISSÃO
-    if not is_admin() and r["colaborador"] != current_user.id:
-        conn.close()
-        return "Sem permissão"
+<h2>✏️ Editar Registro</h2>
 
-    # ✏️ salvar edição
-    if request.method == "POST":
-        data = request.form["data"]
-        titulo = request.form["titulo"]
-        cliente = request.form["cliente"]
-        nivel = request.form["nivel"]
+<div class="card">
+<form method="POST">
 
-        # 🔐 operador não pode trocar o nome
-        if is_admin():
-            colaborador = request.form["colaborador"]
-        else:
-            colaborador = current_user.id
+    <label>Data:</label><br>
+    <input type="date" name="data" value="{{ r['data'] }}"><br><br>
 
-        c.execute("""
-        UPDATE registros SET
-        data=?, titulo=?, cliente=?, colaborador=?, nivel=?
-        WHERE id=?
-        """, (data, titulo, cliente, colaborador, nivel, id))
+    <label>Título:</label><br>
+    <input name="titulo" value="{{ r['titulo'] }}"><br><br>
 
-        conn.commit()
-        conn.close()
-        return redirect("/")
+    <label>Cliente:</label><br>
+    <select name="cliente">
+        {% for c in clientes %}
+        <option {% if c == r['cliente'] %}selected{% endif %}>
+            {{c}}
+        </option>
+        {% endfor %}
+    </select><br><br>
 
-    # 📋 carregar clientes
-    c.execute("SELECT nome FROM clientes")
-    clientes = [x["nome"] for x in c.fetchall()]
+    <label>Nível:</label><br>
+    <select name="nivel">
+        <option value="1" {% if r['nivel']=='1' %}selected{% endif %}>N1</option>
+        <option value="2" {% if r['nivel']=='2' %}selected{% endif %}>N2</option>
+        <option value="3" {% if r['nivel']=='3' %}selected{% endif %}>N3</option>
+        <option value="4" {% if r['nivel']=='4' %}selected{% endif %}>N4</option>
+    </select><br><br>
 
-    conn.close()
+    {% if is_admin %}
+    <label>Operador:</label><br>
+    <input name="colaborador" value="{{ r['colaborador'] }}"><br><br>
+    {% endif %}
 
-    return render_template(
-        "editar.html",
-        r=r,
-        clientes=clientes,
-        is_admin=is_admin()
-    )
+    <button>💾 Salvar Alterações</button>
+
+</form>
+</div>
+
+<br>
+<a href="/">⬅ Voltar</a>
+
+</body>
+</html>

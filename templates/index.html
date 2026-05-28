@@ -2,94 +2,92 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Dashboard</title>
+<title>Painel</title>
 
 <style>
-body { margin:0; font-family:Arial; display:flex; }
-.sidebar { width:220px; background:#0d1b2a; color:#fff; height:100vh; padding:20px; }
-.sidebar a { display:block; color:#fff; margin:10px 0; text-decoration:none; }
+body {
+    font-family: Arial;
+    background: #f1f5f9;
+    padding: 20px;
+}
 
-.content { flex:1; padding:20px; background:#f1f5f9; }
+.menu a {
+    margin-right: 10px;
+}
 
-.card { background:#fff; padding:10px; margin-bottom:10px; border-radius:8px; }
-
-table { width:100%; background:#fff; border-radius:8px; }
-th { background:#2563eb; color:#fff; }
-td, th { padding:8px; text-align:center; }
+.card {
+    background: #fff;
+    padding: 15px;
+    margin-top: 10px;
+    border-radius: 8px;
+}
 </style>
-
 </head>
 
 <body>
 
-<div class="sidebar">
-<h2>OPSEG</h2>
-<a href="/">Dashboard</a>
-<a href="/grafico">Gráfico</a>
+<h2>📊 Painel Principal</h2>
 
-{% if is_admin %}
-<a href="/clientes">Clientes</a>
-<a href="/usuarios">Usuários</a>
-{% endif %}
-
-<a href="/logout">Sair</a>
+<div class="menu">
+    <a href="/grafico">📈 Gráfico</a>
+    <a href="/clientes">👥 Clientes</a>
+    <a href="/usuarios">🔐 Usuários</a>
+    <a href="/logout">🚪 Sair</a>
 </div>
 
-<div class="content">
+<hr>
 
+<!-- 🔥 FORMULÁRIO -->
 <div class="card">
 <form method="POST">
-<input type="date" name="data" required>
-<input name="titulo" placeholder="Título" required>
-<input name="colaborador" placeholder="Operador" required>
 
-<select name="cliente">
-{% for c in clientes %}
-<option value="{{ c }}">{{ c }}</option>
-{% endfor %}
-</select>
+    <label>Data:</label><br>
+    <input type="date" name="data" required><br><br>
 
-<select name="nivel">
-<option value="1">1</option>
-<option value="2">2</option>
-<option value="3">3</option>
-<option value="4">4</option>
-</select>
+    <label>Título:</label><br>
+    <input name="titulo" required><br><br>
 
-<button>Salvar</button>
+    <label>Cliente:</label><br>
+    <select name="cliente">
+        {% for c in clientes %}
+        <option>{{c}}</option>
+        {% endfor %}
+    </select><br><br>
+
+    <label>Nível:</label><br>
+    <select name="nivel">
+        <option value="1">N1</option>
+        <option value="2">N2</option>
+        <option value="3">N3</option>
+        <option value="4">N4</option>
+    </select><br><br>
+
+    {% if is_admin %}
+    <label>Operador:</label><br>
+    <input name="colaborador" placeholder="Nome do operador"><br><br>
+    {% endif %}
+
+    <button>💾 Salvar</button>
+
 </form>
 </div>
 
-<table>
-<tr>
-<th>Data</th>
-<th>Título</th>
-<th>Cliente</th>
-<th>Operador</th>
-<th>Nível</th>
-{% if is_admin %}
-<th>Ações</th>
-{% endif %}
-</tr>
+<hr>
+
+<h3>📋 Registros</h3>
 
 {% for r in registros %}
-<tr>
-<td>{{ r['data'] }}</td>
-<td>{{ r['titulo'] }}</td>
-<td>{{ r['cliente'] }}</td>
-<td>{{ r['colaborador'] }}</td>
-<td>{{ r['nivel'] }}</td>
+<div class="card">
+    <b>{{ r['titulo'] }}</b><br>
+    Cliente: {{ r['cliente'] }}<br>
+    Data: {{ r['data'] }}<br>
+    Operador: {{ r['colaborador'] }}<br>
+    Nível: {{ r['nivel'] }}<br><br>
 
-{% if is_admin %}
-<td>
-<a href="/editar/{{ r['id'] }}">Editar</a>
-<a href="/excluir/{{ r['id'] }}">Excluir</a>
-</td>
-{% endif %}
-</tr>
-{% endfor %}
-</table>
-
+    <a href="/editar/{{ r['id'] }}">✏️ Editar</a> |
+    <a href="/excluir/{{ r['id'] }}">🗑 Excluir</a>
 </div>
+{% endfor %}
+
 </body>
 </html>

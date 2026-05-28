@@ -3,7 +3,7 @@ import sqlite3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 app = Flask(__name__)
-app.secret_key = "segredo123"
+app.secret_key = "123"
 
 # ================= BANCO =================
 def get_db():
@@ -15,16 +15,8 @@ def criar_banco():
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("""CREATE TABLE IF NOT EXISTS usuarios (
-        username TEXT PRIMARY KEY,
-        password TEXT,
-        tipo TEXT
-    )""")
-
-    c.execute("""CREATE TABLE IF NOT EXISTS clientes (
-        nome TEXT PRIMARY KEY
-    )""")
-
+    c.execute("CREATE TABLE IF NOT EXISTS usuarios (username TEXT PRIMARY KEY, password TEXT, tipo TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS clientes (nome TEXT PRIMARY KEY)")
     c.execute("""CREATE TABLE IF NOT EXISTS registros (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         data TEXT,
@@ -34,7 +26,6 @@ def criar_banco():
         nivel TEXT
     )""")
 
-    # usuário admin padrão
     c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','123','admin')")
 
     conn.commit()
@@ -57,10 +48,10 @@ def load_user(user_id):
     conn = get_db()
     c = conn.cursor()
     c.execute("SELECT * FROM usuarios WHERE username=?", (user_id,))
-    user = c.fetchone()
+    u = c.fetchone()
     conn.close()
-    if user:
-        return User(user["username"], user["tipo"])
+    if u:
+        return User(u["username"], u["tipo"])
 
 def is_admin():
     return current_user.tipo == "admin"
@@ -90,7 +81,7 @@ def logout():
     logout_user()
     return redirect("/login")
 
-# ================= DASHBOARD =================
+# ================= HOME =================
 @app.route("/", methods=["GET","POST"])
 @login_required
 def index():
@@ -98,7 +89,6 @@ def index():
     conn = get_db()
     c = conn.cursor()
 
-    # 🔒 FILTRO POR USUÁRIO
     if is_admin():
         c.execute("SELECT * FROM registros ORDER BY id DESC")
     else:
@@ -106,7 +96,6 @@ def index():
 
     registros = c.fetchall()
 
-    # ➕ INSERIR
     if request.method == "POST":
         c.execute("""
         INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
@@ -129,11 +118,113 @@ def index():
     return render_template("index.html",
         registros=registros,
         clientes=clientes,
-        is_admin=is_admin(),
-        usuario=current_user.id
+        is_admin=is_admin()
     )
 
-# ================= GRÁFICO =================
+# ================= EDITAR =================
+@app.route("/editar/<int:id>", methods=["GET","POST"])
+@login_required
+def editar(id):
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("SELECT * FROM registros WHERE id=?", (id,))
+    r = c.fetchone()
+
+    if not r:
+        return "Erro"
+
+    if not is_admin() and r["colaborador"] != current_user.id:
+        return "Sem permissão"
+
+    if request.method == "POST":
+        c.execute("""
+        UPDATE registros SET data=?, titulo=?, cliente=?, colaborador=?, nivel=?
+        WHERE id=?
+        """, (
+            request.form["data"],
+            request.form["titulo"],
+            request.form["cliente"],
+            current_user.id if not is_admin() else request.form["colaborador"],
+            request.form["nivel"],
+            id
+        ))
+        conn.commit()
+        return redirect("/")
+
+    c.execute("SELECT nome FROM clientes")
+    clientes = [x["nome"] for x in c.fetchall()]
+
+    conn.close()
+
+    return render_template("editar.html", r=r, clientes=clientes, is_admin=is_admin())
+
+# ================= EXCLUIR =================
+@app.route("/excluir/<int:id>")
+@login_required
+def excluir(id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("DELETE FROM registros WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
+    return redirect("/")
+
+# ================= CLIENTES =================
+@app.route("/clientes", methods=["GET","POST"])
+@login_required
+def clientes():
+
+    if not is_admin():
+        return "Acesso negado"
+
+    conn = get_db()
+    c = conn.cursor()
+
+    if request.method == "POST":
+        nome = request.form["nome"]
+        try:
+            c.execute("INSERT INTO clientes VALUES (?)", (nome,))
+            conn.commit()
+        except:
+            pass
+
+    c.execute("SELECT nome FROM clientes")
+    lista = c.fetchall()
+    conn.close()
+
+    return render_template("clientes.html", clientes=lista)
+
+# ================= USUÁRIOS =================
+@app.route("/usuarios", methods=["GET","POST"])
+@login_required
+def usuarios():
+
+    if not is_admin():
+        return "Acesso negado"
+
+    conn = get_db()
+    c = conn.cursor()
+
+    if request.method == "POST":
+        try:
+            c.execute("INSERT INTO usuarios VALUES (?,?,?)", (
+                request.form["username"],
+                request.form["password"],
+                request.form["tipo"]
+            ))
+            conn.commit()
+        except:
+            pass
+
+    c.execute("SELECT username, tipo FROM usuarios")
+    lista = c.fetchall()
+    conn.close()
+
+    return render_template("usuarios.html", usuarios=lista)
+
+# ================= GRAFICO =================
 @app.route("/grafico")
 @login_required
 def grafico():
@@ -141,12 +232,9 @@ def grafico():
     conn = get_db()
     c = conn.cursor()
 
-    operador = None  # 🔥 ESSENCIAL
+    operador = request.args.get("operador")
 
-    # 🔐 ADMIN
     if is_admin():
-        operador = request.args.get("operador")
-
         if operador and operador != "todos":
             c.execute("SELECT * FROM registros WHERE colaborador=?", (operador,))
         else:
@@ -157,13 +245,11 @@ def grafico():
 
     dados = c.fetchall()
 
-    # 📊 CONTAGEM
     n1 = len([x for x in dados if x["nivel"] == "1"])
     n2 = len([x for x in dados if x["nivel"] == "2"])
     n3 = len([x for x in dados if x["nivel"] == "3"])
     n4 = len([x for x in dados if x["nivel"] == "4"])
 
-    # 💰 VALORES
     v1 = round(n1 * 1.99, 2)
     v2 = round(n2 * 2.99, 2)
     v3 = round(n3 * 4.99, 2)
@@ -171,7 +257,6 @@ def grafico():
 
     total = round(v1 + v2 + v3 + v4, 2)
 
-    # 👥 LISTA OPERADORES
     operadores = []
     if is_admin():
         c.execute("SELECT DISTINCT colaborador FROM registros")
@@ -179,13 +264,12 @@ def grafico():
 
     conn.close()
 
-    return render_template(
-        "grafico.html",
-        n1=n1, n2=n2, n3=n3, n4=n4,
-        v1=v1, v2=v2, v3=v3, v4=v4,
+    return render_template("grafico.html",
+        n1=n1,n2=n2,n3=n3,n4=n4,
+        v1=v1,v2=v2,v3=v3,v4=v4,
         total=total,
         operadores=operadores,
-        operador_selecionado=operador,  # 🔥 ESSENCIAL
+        operador_selecionado=operador,
         is_admin=is_admin()
     )
 
