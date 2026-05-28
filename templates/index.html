@@ -41,8 +41,7 @@ td, th { padding:8px; text-align:center; }
 <form method="POST">
 <input type="date" name="data" required>
 <input name="titulo" placeholder="Título" required>
-<input name="colaborador" placeholder="Operador"
-{% if not is_admin %}value="{{usuario}}" readonly{% endif %}>
+<input name="colaborador" placeholder="Operador" required>
 
 <select name="cliente">
 {% for c in clientes %}

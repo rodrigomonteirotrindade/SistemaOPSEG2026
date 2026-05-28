@@ -7,18 +7,97 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body { font-family: Arial; background:#f1f5f9; padding:20px; }
-.card { background:#fff; padding:20px; border-radius:10px; width:400px; }
-</style>
+body { margin:0; font-family:Arial; display:flex; }
 
+.sidebar {
+    width:220px;
+    background:#0f172a;
+    color:white;
+    height:100vh;
+    padding:20px;
+}
+
+.sidebar a {
+    display:block;
+    color:white;
+    margin:10px 0;
+    text-decoration:none;
+}
+
+.content {
+    flex:1;
+    padding:20px;
+    background:#f1f5f9;
+}
+
+.card {
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+</style>
 </head>
 
 <body>
 
-<h2>Gráfico - {{ usuario }}</h2>
+<div class="sidebar">
+<h2>OPSEG</h2>
+<a href="/">Dashboard</a>
+<a href="/grafico">Gráfico</a>
+<a href="/clientes">Clientes</a>
+<a href="/usuarios">Usuários</a>
+<a href="/logout">Sair</a>
+</div>
+
+<div class="content">
+
+<h2>Gráfico por Operador</h2>
+
+<a href="/" style="background:#3b82f6;color:white;padding:8px;border-radius:5px;text-decoration:none;">
+⬅ Voltar para Dashboard
+</a>
+
+<br><br>
 
 <div class="card">
-<canvas id="grafico"></canvas>
+<form method="GET">
+
+<select name="operador">
+<option value="todos">Todos</option>
+
+{% for op in operadores %}
+<option value="{{ op }}" {% if op == operador %}selected{% endif %}>
+{{ op }}
+</option>
+{% endfor %}
+
+</select>
+
+<button type="submit">Filtrar</button>
+
+</form>
+</div>
+
+<div class="card" style="width:250px;">
+<canvas id="grafico" width="200" height="200"></canvas>
+</div>
+
+<div class="card">
+
+<h3>Valores</h3>
+
+<p>N1: {{ n1 }} → R$ {{ valor_n1 }}</p>
+<p>N2: {{ n2 }} → R$ {{ valor_n2 }}</p>
+<p>N3: {{ n3 }} → R$ {{ valor_n3 }}</p>
+<p>N4: {{ n4 }} → R$ {{ valor_n4 }}</p>
+
+<hr>
+
+<h2>Total: R$ {{ total_valor }}</h2>
+
+</div>
+
 </div>
 
 <script>
@@ -27,19 +106,20 @@ type: 'pie',
 data: {
 labels: ["N1","N2","N3","N4"],
 datasets: [{
-data: [{{n1}},{{n2}},{{n3}},{{n4}}],
-backgroundColor:["green","yellow","orange","red"]
+data: [{{ n1 }}, {{ n2 }}, {{ n3 }}, {{ n4 }}],
+backgroundColor: ["#22c55e","#eab308","#f97316","#ef4444"]
 }]
+},
+options: {
+responsive: false,
+plugins: {
+legend: {
+position: 'bottom'
+}
+}
 }
 });
 </script>
-
-<br>
-
-<h3>Total: R$ {{ total }}</h3>
-
-<br>
-<a href="/">⬅ Voltar</a>
 
 </body>
 </html>

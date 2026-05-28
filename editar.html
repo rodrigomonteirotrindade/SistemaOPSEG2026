@@ -1,48 +1,55 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Editar</title>
-</head>
+@app.route("/editar/<int:id>", methods=["GET","POST"])
+@login_required
+def editar(id):
 
-<body>
+    conn = get_db()
+    c = conn.cursor()
 
-<h2>Editar Registro</h2>
+    # 🔍 busca registro
+    c.execute("SELECT * FROM registros WHERE id=?", (id,))
+    r = c.fetchone()
 
-<form method="POST">
+    if not r:
+        conn.close()
+        return "Registro não encontrado"
 
-<label>Data</label><br>
-<input type="date" name="data" value="{{ r['data'] }}"><br><br>
+    # 🔒 PERMISSÃO
+    if not is_admin() and r["colaborador"] != current_user.id:
+        conn.close()
+        return "Sem permissão"
 
-<label>Título</label><br>
-<input name="titulo" value="{{ r['titulo'] }}"><br><br>
+    # ✏️ salvar edição
+    if request.method == "POST":
+        data = request.form["data"]
+        titulo = request.form["titulo"]
+        cliente = request.form["cliente"]
+        nivel = request.form["nivel"]
 
-<label>Operador</label><br>
-<input name="colaborador" value="{{ r['colaborador'] }}" {% if not is_admin %}readonly{% endif %}>
+        # 🔐 operador não pode trocar o nome
+        if is_admin():
+            colaborador = request.form["colaborador"]
+        else:
+            colaborador = current_user.id
 
-<label>Cliente</label><br>
-<select name="cliente">
-{% for c in clientes %}
-<option value="{{ c }}" {% if c == r['cliente'] %}selected{% endif %}>
-{{ c }}
-</option>
-{% endfor %}
-</select><br><br>
+        c.execute("""
+        UPDATE registros SET
+        data=?, titulo=?, cliente=?, colaborador=?, nivel=?
+        WHERE id=?
+        """, (data, titulo, cliente, colaborador, nivel, id))
 
-<label>Nível</label><br>
-<select name="nivel">
-<option value="1" {% if r['nivel']|string == "1" %}selected{% endif %}>Nível 1</option>
-<option value="2" {% if r['nivel']|string == "2" %}selected{% endif %}>Nível 2</option>
-<option value="3" {% if r['nivel']|string == "3" %}selected{% endif %}>Nível 3</option>
-<option value="4" {% if r['nivel']|string == "4" %}selected{% endif %}>Nível 4</option>
-</select><br><br>
+        conn.commit()
+        conn.close()
+        return redirect("/")
 
-<button type="submit">Salvar</button>
+    # 📋 carregar clientes
+    c.execute("SELECT nome FROM clientes")
+    clientes = [x["nome"] for x in c.fetchall()]
 
-</form>
+    conn.close()
 
-<br>
-<a href="/">⬅ Voltar</a>
-
-</body>
-</html>
+    return render_template(
+        "editar.html",
+        r=r,
+        clientes=clientes,
+        is_admin=is_admin()
+    )
