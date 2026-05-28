@@ -2,44 +2,53 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Gráfico</title>
+<title>Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body { font-family: Arial; background:#f1f5f9; padding:20px; }
+body {
+    font-family: Arial;
+    background: #f1f5f9;
+    padding: 20px;
+}
 
 .card {
-    background:#fff;
-    padding:20px;
-    border-radius:10px;
-    width:350px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    width: 400px;
 }
 
 select {
-    padding:8px;
-    border-radius:5px;
+    padding: 8px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+h2 {
+    margin-bottom: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>📊 Dashboard</h2>
+<h2>📊 Dashboard de Produção</h2>
 
-<!-- 🔥 AQUI ESTÁ O SELETOR -->
+<!-- 🔥 SELETOR DE OPERADOR -->
 {% if is_admin %}
 <form method="GET">
 
-    <label><b>Selecionar Operador:</b></label><br><br>
+    <label><b>Selecionar Operador:</b></label><br>
 
     <select name="operador" onchange="this.form.submit()">
         <option value="todos">Todos</option>
 
         {% for op in operadores %}
-        <option value="{{op}}"
+        <option value="{{ op }}"
         {% if op == operador_selecionado %}selected{% endif %}>
-            {{op}}
+            {{ op }}
         </option>
         {% endfor %}
 
@@ -48,40 +57,55 @@ select {
 </form>
 {% endif %}
 
-<br><br>
+<br>
 
 <div class="card">
     <canvas id="grafico"></canvas>
 </div>
 
 <script>
-new Chart(document.getElementById("grafico"), {
+const ctx = document.getElementById("grafico");
+
+new Chart(ctx, {
     type: 'pie',
     data: {
         labels: ["N1","N2","N3","N4"],
         datasets: [{
-            data: [{{n1}},{{n2}},{{n3}},{{n4}}],
-            backgroundColor:["green","yellow","orange","red"]
+            data: [{{ n1 }}, {{ n2 }}, {{ n3 }}, {{ n4 }}],
+            backgroundColor: [
+                "#22c55e",
+                "#eab308",
+                "#f97316",
+                "#ef4444"
+            ]
         }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
     }
 });
 </script>
 
 <br>
 
-<h3>💰 Valores:</h3>
+<h3>💰 Valores por nível</h3>
 
-<p>N1: {{n1}} → R$ {{v1}}</p>
-<p>N2: {{n2}} → R$ {{v2}}</p>
-<p>N3: {{n3}} → R$ {{v3}}</p>
-<p>N4: {{n4}} → R$ {{v4}}</p>
+<p><b>N1:</b> {{ n1 }} → R$ {{ v1 }}</p>
+<p><b>N2:</b> {{ n2 }} → R$ {{ v2 }}</p>
+<p><b>N3:</b> {{ n3 }} → R$ {{ v3 }}</p>
+<p><b>N4:</b> {{ n4 }} → R$ {{ v4 }}</p>
 
 <hr>
 
 <h2>💵 Total: R$ {{ total }}</h2>
 
 <br>
-<a href="/">⬅ Voltar</a>
+<a href="/">⬅ Voltar para início</a>
 
 </body>
 </html>
