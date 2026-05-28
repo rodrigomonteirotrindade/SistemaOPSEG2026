@@ -3,75 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <title>Dashboard</title>
-
 <style>
-body { margin:0; font-family:Arial; display:flex; }
-
-.sidebar {
-    width:220px;
-    background:#0f172a;
-    color:white;
-    height:100vh;
-    padding:20px;
-}
-
-.sidebar h2 { margin-bottom:20px; }
-
-.sidebar a {
-    display:block;
-    color:white;
-    margin:10px 0;
-    text-decoration:none;
-}
-
-.content {
-    flex:1;
-    padding:20px;
-    background:#f1f5f9;
-}
-
-.cards {
-    display:flex;
-    gap:10px;
-    margin-bottom:20px;
-}
-
-.card {
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    flex:1;
-    text-align:center;
-}
-
-.form-box {
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:20px;
-}
-
-table {
-    width:100%;
-    background:white;
-    border-radius:10px;
-    border-collapse: collapse;
-}
-
-th, td {
-    padding:10px;
-    border-bottom:1px solid #ddd;
-}
-
-.btn {
-    padding:5px 8px;
-    border-radius:5px;
-    color:white;
-    text-decoration:none;
-}
-
-.editar { background:#3b82f6; }
-.excluir { background:#ef4444; }
+body { display:flex; margin:0; font-family:Arial; }
+.sidebar { width:220px; background:#111; color:#fff; height:100vh; padding:20px; }
+.sidebar a { color:#fff; display:block; margin:10px 0; text-decoration:none; }
+.content { flex:1; padding:20px; background:#f5f5f5; }
+table { width:100%; background:#fff; }
 </style>
 </head>
 
@@ -79,9 +16,7 @@ th, td {
 
 <div class="sidebar">
 <h2>OPSEG</h2>
-
 <a href="/">Dashboard</a>
-<a href="/grafico">Gráficos</a>
 
 {% if is_admin %}
 <a href="/clientes">Clientes</a>
@@ -93,13 +28,7 @@ th, td {
 
 <div class="content">
 
-<h2>Dashboard Operacional</h2>
-
-<div class="cards">
-<div class="card">Total<br>{{ registros|length }}</div>
-</div>
-
-<div class="form-box">
+<h2>Lançamento</h2>
 
 <form method="POST">
 <input type="date" name="data" required>
@@ -113,16 +42,16 @@ th, td {
 </select>
 
 <select name="nivel">
-<option value="1">N1</option>
-<option value="2">N2</option>
-<option value="3">N3</option>
-<option value="4">N4</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
 </select>
 
 <button>Salvar</button>
 </form>
 
-</div>
+<hr>
 
 <table>
 <tr>
@@ -131,7 +60,6 @@ th, td {
 <th>Cliente</th>
 <th>Operador</th>
 <th>Nível</th>
-
 {% if is_admin %}
 <th>Ações</th>
 {% endif %}
@@ -147,17 +75,15 @@ th, td {
 
 {% if is_admin %}
 <td>
-<a href="/editar/{{ r['id'] }}" class="btn editar">Editar</a>
-<a href="/excluir/{{ r['id'] }}" class="btn excluir">Excluir</a>
+<a href="/editar/{{ r['id'] }}">Editar</a>
+<a href="/excluir/{{ r['id'] }}">Excluir</a>
 </td>
 {% endif %}
 
 </tr>
 {% endfor %}
-
 </table>
 
 </div>
-
 </body>
 </html>
