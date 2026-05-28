@@ -1,26 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Editar</title>
+</head>
+
+<body>
+
 <h2>Editar Registro</h2>
 
 <form method="POST">
-<input type="date" name="data" value="{{ r['data'] }}">
-<input name="titulo" value="{{ r['titulo'] }}">
-<input name="colaborador" value="{{ r['colaborador'] }}">
 
+<label>Data</label><br>
+<input type="date" name="data" value="{{ r['data'] }}"><br><br>
+
+<label>Título</label><br>
+<input name="titulo" value="{{ r['titulo'] }}"><br><br>
+
+<label>Operador</label><br>
+<input name="colaborador" value="{{ r['colaborador'] }}"><br><br>
+
+<label>Cliente</label><br>
 <select name="cliente">
 {% for c in clientes %}
 <option value="{{ c }}" {% if c == r['cliente'] %}selected{% endif %}>
 {{ c }}
 </option>
 {% endfor %}
-</select>
+</select><br><br>
 
+<label>Nível</label><br>
 <select name="nivel">
-<option value="1">1</option>
-<option value="2">2</option>
-<option value="3">3</option>
-<option value="4">4</option>
-</select>
+<option value="1" {% if r['nivel']|string == "1" %}selected{% endif %}>Nível 1</option>
+<option value="2" {% if r['nivel']|string == "2" %}selected{% endif %}>Nível 2</option>
+<option value="3" {% if r['nivel']|string == "3" %}selected{% endif %}>Nível 3</option>
+<option value="4" {% if r['nivel']|string == "4" %}selected{% endif %}>Nível 4</option>
+</select><br><br>
 
-<button>Salvar</button>
+<button type="submit">Salvar</button>
+
 </form>
 
-<a href="/">Voltar</a>
+<br>
+<a href="/">⬅ Voltar</a>
+
+</body>
+</html>
