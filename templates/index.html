@@ -1,6 +1,43 @@
-<!-- (mantive seu layout simples e funcional) -->
-<h2>Dashboard</h2>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Dashboard</title>
 
+<style>
+body { margin:0; font-family:Arial; display:flex; }
+.sidebar { width:220px; background:#0d1b2a; color:#fff; height:100vh; padding:20px; }
+.sidebar a { display:block; color:#fff; margin:10px 0; text-decoration:none; }
+
+.content { flex:1; padding:20px; background:#f1f5f9; }
+
+.card { background:#fff; padding:10px; margin-bottom:10px; border-radius:8px; }
+
+table { width:100%; background:#fff; border-radius:8px; }
+th { background:#2563eb; color:#fff; }
+td, th { padding:8px; text-align:center; }
+</style>
+
+</head>
+
+<body>
+
+<div class="sidebar">
+<h2>OPSEG</h2>
+<a href="/">Dashboard</a>
+<a href="/grafico">Gráfico</a>
+
+{% if is_admin %}
+<a href="/clientes">Clientes</a>
+<a href="/usuarios">Usuários</a>
+{% endif %}
+
+<a href="/logout">Sair</a>
+</div>
+
+<div class="content">
+
+<div class="card">
 <form method="POST">
 <input type="date" name="data" required>
 <input name="titulo" placeholder="Título" required>
@@ -21,17 +58,18 @@
 
 <button>Salvar</button>
 </form>
+</div>
 
-<hr>
-
-<table border="1">
+<table>
 <tr>
 <th>Data</th>
 <th>Título</th>
 <th>Cliente</th>
 <th>Operador</th>
 <th>Nível</th>
+{% if is_admin %}
 <th>Ações</th>
+{% endif %}
 </tr>
 
 {% for r in registros %}
@@ -42,14 +80,16 @@
 <td>{{ r['colaborador'] }}</td>
 <td>{{ r['nivel'] }}</td>
 
+{% if is_admin %}
 <td>
-<a href="/editar/{{ r['id'] }}">Editar</a> |
+<a href="/editar/{{ r['id'] }}">Editar</a>
 <a href="/excluir/{{ r['id'] }}">Excluir</a>
 </td>
+{% endif %}
 </tr>
 {% endfor %}
-
 </table>
 
-<br>
-<a href="/grafico">Ir para Gráfico</a>
+</div>
+</body>
+</html>

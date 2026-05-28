@@ -5,7 +5,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 app = Flask(__name__)
 app.secret_key = "segredo123"
 
-# ================= BANCO =================
+# ===== BANCO =====
 def get_db():
     conn = sqlite3.connect("banco.db")
     conn.row_factory = sqlite3.Row
@@ -15,30 +15,24 @@ def criar_banco():
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS usuarios (
+    c.execute("""CREATE TABLE IF NOT EXISTS usuarios (
         username TEXT PRIMARY KEY,
         password TEXT,
         tipo TEXT
-    )
-    """)
+    )""")
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS clientes (
+    c.execute("""CREATE TABLE IF NOT EXISTS clientes (
         nome TEXT PRIMARY KEY
-    )
-    """)
+    )""")
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS registros (
+    c.execute("""CREATE TABLE IF NOT EXISTS registros (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         data TEXT,
         titulo TEXT,
         cliente TEXT,
         colaborador TEXT,
         nivel TEXT
-    )
-    """)
+    )""")
 
     c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','evt123456','admin')")
 
@@ -47,7 +41,7 @@ def criar_banco():
 
 criar_banco()
 
-# ================= LOGIN =================
+# ===== LOGIN =====
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
@@ -64,20 +58,18 @@ def load_user(user_id):
     c.execute("SELECT * FROM usuarios WHERE username=?", (user_id,))
     user = c.fetchone()
     conn.close()
-
     if user:
         return User(user["username"], user["tipo"])
-    return None
 
 def is_admin():
     return current_user.tipo == "admin"
 
-# ================= LOGIN =================
+# ===== LOGIN =====
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "POST":
-        u = request.form.get("username")
-        s = request.form.get("password")
+        u = request.form["username"]
+        s = request.form["password"]
 
         conn = get_db()
         c = conn.cursor()
@@ -97,7 +89,7 @@ def logout():
     logout_user()
     return redirect("/login")
 
-# ================= DASHBOARD =================
+# ===== DASHBOARD =====
 @app.route("/", methods=["GET","POST"])
 @login_required
 def index():
@@ -110,11 +102,11 @@ def index():
         INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
         VALUES (?,?,?,?,?)
         """, (
-            request.form.get("data"),
-            request.form.get("titulo"),
-            request.form.get("cliente"),
-            request.form.get("colaborador"),
-            request.form.get("nivel")
+            request.form["data"],
+            request.form["titulo"],
+            request.form["cliente"],
+            request.form["colaborador"],
+            request.form["nivel"]
         ))
         conn.commit()
 
@@ -132,23 +124,7 @@ def index():
         is_admin=is_admin()
     )
 
-# ================= EXCLUIR =================
-@app.route("/excluir/<int:id>")
-@login_required
-def excluir(id):
-
-    if not is_admin():
-        return "Acesso negado"
-
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("DELETE FROM registros WHERE id=?", (id,))
-    conn.commit()
-    conn.close()
-
-    return redirect("/")
-
-# ================= EDITAR =================
+# ===== EDITAR =====
 @app.route("/editar/<int:id>", methods=["GET","POST"])
 @login_required
 def editar(id):
@@ -162,25 +138,22 @@ def editar(id):
     c.execute("SELECT * FROM registros WHERE id=?", (id,))
     r = c.fetchone()
 
-    if r is None:
-        conn.close()
-        return f"Erro: ID {id} não encontrado"
-
-    r = dict(r)
+    if not r:
+        return "Erro: registro não encontrado"
 
     if request.method == "POST":
-        data = request.form.get("data")
-        titulo = request.form.get("titulo")
-        cliente = request.form.get("cliente")
-        colaborador = request.form.get("colaborador")
-        nivel = request.form.get("nivel")
-
         c.execute("""
         UPDATE registros SET
         data=?, titulo=?, cliente=?, colaborador=?, nivel=?
         WHERE id=?
-        """, (data, titulo, cliente, colaborador, nivel, id))
-
+        """, (
+            request.form["data"],
+            request.form["titulo"],
+            request.form["cliente"],
+            request.form["colaborador"],
+            request.form["nivel"],
+            id
+        ))
         conn.commit()
         conn.close()
         return redirect("/")
@@ -192,56 +165,40 @@ def editar(id):
 
     return render_template("editar.html", r=r, clientes=clientes)
 
-# ================= CLIENTES =================
-@app.route("/clientes", methods=["GET","POST"])
+# ===== EXCLUIR =====
+@app.route("/excluir/<int:id>")
 @login_required
-def clientes():
-
+def excluir(id):
     if not is_admin():
         return "Acesso negado"
 
     conn = get_db()
     c = conn.cursor()
-
-    if request.method == "POST":
-        nome = request.form.get("nome")
-        if nome:
-            c.execute("INSERT INTO clientes VALUES (?)", (nome,))
-            conn.commit()
-
-    c.execute("SELECT * FROM clientes")
-    lista = c.fetchall()
-
+    c.execute("DELETE FROM registros WHERE id=?", (id,))
+    conn.commit()
     conn.close()
-    return render_template("clientes.html", clientes=lista)
+    return redirect("/")
 
-# ================= USUÁRIOS =================
-@app.route("/usuarios", methods=["GET","POST"])
+# ===== GRÁFICO =====
+@app.route("/grafico")
 @login_required
-def usuarios():
-
-    if not is_admin():
-        return "Acesso negado"
+def grafico():
 
     conn = get_db()
     c = conn.cursor()
 
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-        tipo = request.form.get("tipo")
+    c.execute("SELECT * FROM registros")
+    dados = c.fetchall()
 
-        if username and password and tipo:
-            c.execute("INSERT INTO usuarios VALUES (?,?,?)",
-                      (username, password, tipo))
-            conn.commit()
-
-    c.execute("SELECT * FROM usuarios")
-    lista = c.fetchall()
+    n1 = len([x for x in dados if x["nivel"] == "1"])
+    n2 = len([x for x in dados if x["nivel"] == "2"])
+    n3 = len([x for x in dados if x["nivel"] == "3"])
+    n4 = len([x for x in dados if x["nivel"] == "4"])
 
     conn.close()
-    return render_template("usuarios.html", usuarios=lista)
 
-# ================= RUN =================
+    return render_template("grafico.html", n1=n1,n2=n2,n3=n3,n4=n4)
+
+# ===== RUN =====
 if __name__ == "__main__":
     app.run(debug=True)
