@@ -2,99 +2,40 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Gráfico por Operador</title>
+<title>Gráfico</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body { margin:0; font-family:Arial; display:flex; }
-
-.sidebar {
-    width:220px;
-    background:#0f172a;
-    color:white;
-    height:100vh;
-    padding:20px;
-}
-
-.sidebar a {
-    display:block;
-    color:white;
-    margin:10px 0;
-    text-decoration:none;
-}
-
-.content {
-    flex:1;
-    padding:20px;
-    background:#f1f5f9;
-}
-
-.card {
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    margin-bottom:20px;
-}
-</style>
 </head>
 
 <body>
 
-<div class="sidebar">
-<h2>OPSEG</h2>
-<a href="/">Dashboard</a>
-<a href="/grafico">Gráfico</a>
-<a href="/clientes">Clientes</a>
-<a href="/usuarios">Usuários</a>
-<a href="/logout">Sair</a>
-</div>
-
-<div class="content">
-
 <h2>Gráfico por Operador</h2>
 
-<div class="card">
-
 <form method="GET">
-
 <select name="operador">
 <option value="todos">Todos</option>
 
 {% for op in operadores %}
-<option value="{{ op }}" {% if op == operador %}selected{% endif %}>
-{{ op }}
-</option>
+<option value="{{ op }}">{{ op }}</option>
 {% endfor %}
 
 </select>
 
 <button>Filtrar</button>
-
 </form>
 
-</div>
+<br>
 
-<div class="card" style="width:400px;">
-<canvas id="grafico"></canvas>
-</div>
+<canvas id="grafico" width="300"></canvas>
 
-<div class="card">
+<h3>Valores</h3>
 
-<h3>Resumo Financeiro</h3>
-
-<p>Nível 1: {{ n1 }} → R$ {{ (n1 * valores_unitarios[0])|round(2) }}</p>
-<p>Nível 2: {{ n2 }} → R$ {{ (n2 * valores_unitarios[1])|round(2) }}</p>
-<p>Nível 3: {{ n3 }} → R$ {{ (n3 * valores_unitarios[2])|round(2) }}</p>
-<p>Nível 4: {{ n4 }} → R$ {{ (n4 * valores_unitarios[3])|round(2) }}</p>
-
-<hr>
+<p>N1: R$ {{ valor_n1 }}</p>
+<p>N2: R$ {{ valor_n2 }}</p>
+<p>N3: R$ {{ valor_n3 }}</p>
+<p>N4: R$ {{ valor_n4 }}</p>
 
 <h2>Total: R$ {{ total_valor }}</h2>
-
-</div>
-
-</div>
 
 <script>
 new Chart(document.getElementById("grafico"), {
@@ -102,8 +43,7 @@ type: 'pie',
 data: {
 labels: ["N1","N2","N3","N4"],
 datasets: [{
-data: [{{ n1 }}, {{ n2 }}, {{ n3 }}, {{ n4 }}],
-backgroundColor: ["green","yellow","orange","red"]
+data: [{{ n1 }}, {{ n2 }}, {{ n3 }}, {{ n4 }}]
 }]
 }
 });
