@@ -647,6 +647,122 @@ def grafico():
         is_admin=is_admin(),
         operadores=[]
     )
+# ================= ALTERAR SENHA =================
+
+@app.route("/alterar_senha/<username>", methods=["POST"])
+@login_required
+def alterar_senha(username):
+
+    if not is_admin():
+        return "Sem permissão"
+
+    nova=request.form["nova_senha"]
+
+    conn=get_db()
+    c=conn.cursor()
+
+    c.execute("""
+    UPDATE usuarios
+    SET password=?
+    WHERE username=?
+    """,(nova,username))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/usuarios")
+# ================= GRAFICO =================
+
+@app.route("/grafico")
+@login_required
+def grafico():
+
+    conn = get_db()
+    c = conn.cursor()
+
+    operador = request.args.get("operador","todos")
+
+    # ADMIN → pode ver tudo + escolher operador
+    if is_admin():
+
+        if operador == "todos":
+
+            c.execute("""
+            SELECT * FROM registros
+            """)
+
+        else:
+
+            c.execute("""
+            SELECT * FROM registros
+            WHERE colaborador=?
+            """,(operador,))
+
+    # OPERADOR → vê somente o próprio
+
+    else:
+
+        operador = current_user.id
+
+        c.execute("""
+        SELECT * FROM registros
+        WHERE colaborador=?
+        """,(current_user.id,))
+
+    dados = c.fetchall()
+
+    # CONTAGEM
+
+    n1=len([x for x in dados if x["nivel"]=="1"])
+    n2=len([x for x in dados if x["nivel"]=="2"])
+    n3=len([x for x in dados if x["nivel"]=="3"])
+    n4=len([x for x in dados if x["nivel"]=="4"])
+
+    # VALORES
+
+    v1=n1*1.99
+    v2=n2*2.99
+    v3=n3*4.99
+    v4=n4*7.99
+
+    total=round(v1+v2+v3+v4,2)
+
+    # LISTA OPERADORES
+
+    operadores=[]
+
+    if is_admin():
+
+        c.execute("""
+        SELECT DISTINCT colaborador
+        FROM registros
+        ORDER BY colaborador
+        """)
+
+        operadores=[x["colaborador"] for x in c.fetchall()]
+
+    conn.close()
+
+    return render_template(
+        "grafico.html",
+
+        n1=n1,
+        n2=n2,
+        n3=n3,
+        n4=n4,
+
+        v1=round(v1,2),
+        v2=round(v2,2),
+        v3=round(v3,2),
+        v4=round(v4,2),
+
+        total=total,
+
+        operadores=operadores,
+        operador_selecionado=operador,
+
+        is_admin=is_admin()
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)

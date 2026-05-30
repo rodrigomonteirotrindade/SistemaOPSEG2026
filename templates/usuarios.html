@@ -1,24 +1,54 @@
 <!DOCTYPE html>
-<html lang="pt-br">
-<head>
-<meta charset="UTF-8">
-<title>Usuários</title>
+<html>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<head>
+
+<title>Usuários</title>
 
 <style>
 
 body{
-    background:#f4f6f9;
+font-family:Segoe UI;
+background:#eef2f7;
+padding:40px;
 }
 
 .card{
-    border:none;
-    border-radius:12px;
+background:white;
+padding:25px;
+border-radius:12px;
+margin-bottom:25px;
+box-shadow:0 2px 10px rgba(0,0,0,.08);
 }
 
-.navbar-brand{
-    font-weight:bold;
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th,td{
+padding:14px;
+text-align:center;
+}
+
+thead{
+background:#111827;
+color:white;
+}
+
+button{
+background:#2563eb;
+color:white;
+border:none;
+padding:9px 15px;
+border-radius:7px;
+cursor:pointer;
+}
+
+input,select{
+padding:10px;
+border:1px solid #ccc;
+border-radius:7px;
 }
 
 </style>
@@ -27,126 +57,57 @@ body{
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<h1>Usuários</h1>
 
-<div class="container-fluid">
+<div class="card">
 
-<a class="navbar-brand" href="/">
-OPSEG
-</a>
-
-<div>
-
-<a class="btn btn-outline-light btn-sm" href="/">
-Painel
-</a>
-
-<a class="btn btn-danger btn-sm" href="/logout">
-Sair
-</a>
-
-</div>
-
-</div>
-
-</nav>
-
-<div class="container mt-4">
-
-<h2 class="mb-4">
-Gerenciamento de Usuários
-</h2>
-
-<div class="card shadow-sm mb-4">
-
-<div class="card-header">
-Novo Usuário
-</div>
-
-<div class="card-body">
+<h3>Criar Usuário</h3>
 
 <form method="POST">
 
-<div class="row">
-
-<div class="col-md-4">
-
-<label>Usuário</label>
-
 <input
 name="username"
-class="form-control"
+placeholder="Usuário"
 required>
-
-</div>
-
-<div class="col-md-4">
-
-<label>Senha</label>
 
 <input
 name="password"
-class="form-control"
+placeholder="Senha"
 required>
 
-</div>
-
-<div class="col-md-2">
-
-<label>Perfil</label>
-
-<select
-name="tipo"
-class="form-control">
-
-<option value="admin">
-Administrador
-</option>
+<select name="tipo">
 
 <option value="operador">
 Operador
 </option>
 
+<option value="admin">
+Admin
+</option>
+
 </select>
 
-</div>
-
-<div class="col-md-2 d-flex align-items-end">
-
-<button class="btn btn-success w-100">
-Cadastrar
+<button>
+Criar
 </button>
-
-</div>
-
-</div>
 
 </form>
 
 </div>
 
-</div>
+<div class="card">
 
-<div class="card shadow-sm">
+<h3>Usuários cadastrados</h3>
 
-<div class="card-header">
-Usuários Cadastrados
-</div>
-
-<div class="card-body">
-
-<div class="table-responsive">
-
-<table class="table table-striped table-hover">
+<table>
 
 <thead>
 
 <tr>
-
 <th>Usuário</th>
-<th>Perfil</th>
-<th>Ações</th>
-
+<th>Tipo</th>
+<th>Nova senha</th>
+<th>Ação</th>
 </tr>
 
 </thead>
@@ -157,42 +118,30 @@ Usuários Cadastrados
 
 <tr>
 
+<td>{{u['username']}}</td>
+
+<td>{{u['tipo']}}</td>
+
 <td>
-{{ u['username'] }}
+
+<form
+method="POST"
+action="/alterar_senha/{{u['username']}}">
+
+<input
+name="nova_senha"
+placeholder="Nova senha"
+required>
+
 </td>
 
 <td>
 
-{% if u['tipo'] == 'admin' %}
-<span class="badge bg-danger">
-Administrador
-</span>
-{% else %}
-<span class="badge bg-primary">
-Operador
-</span>
-{% endif %}
+<button>
+Alterar
+</button>
 
-</td>
-
-<td>
-
-<a
-href="/editar_usuario/{{u['username']}}"
-class="btn btn-warning btn-sm">
-
-Editar
-
-</a>
-
-<a
-href="/excluir_usuario/{{u['username']}}"
-class="btn btn-danger btn-sm"
-onclick="return confirm('Deseja excluir este usuário?')">
-
-Excluir
-
-</a>
+</form>
 
 </td>
 
@@ -203,12 +152,6 @@ Excluir
 </tbody>
 
 </table>
-
-</div>
-
-</div>
-
-</div>
 
 </div>
 
