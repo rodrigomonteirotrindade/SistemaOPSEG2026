@@ -369,7 +369,147 @@ def usuarios():
         "usuarios.html",
         usuarios=lista
     )
+@app.route("/editar_usuario/<username>", methods=["GET", "POST"])
+@login_required
+def editar_usuario(username):
 
+    if not is_admin():
+        return "Acesso negado"
+
+    conn = get_db()
+
+    usuario = conn.execute(
+        "SELECT * FROM usuarios WHERE username=?",
+        (username,)
+    ).fetchone()
+
+    if not usuario:
+        conn.close()
+        return redirect("/usuarios")
+
+    if request.method == "POST":
+
+        conn.execute("""
+        UPDATE usuarios
+        SET password=?, tipo=?
+        WHERE username=?
+        """,
+        (
+            request.form["password"],
+            request.form["tipo"],
+            username
+        ))
+
+        conn.commit()
+
+        registrar_historico(
+            current_user.id,
+            f"Editou usuário {username}"
+        )
+
+        conn.close()
+
+        return redirect("/usuarios")
+
+    conn.close()
+
+    return render_template(
+        "editar_usuario.html",
+        usuario=usuario
+    )
+@app.route("/excluir_usuario/<username>")
+@login_required
+def excluir_usuario(username):
+
+    if not is_admin():
+        return "Acesso negado"
+
+    if username == current_user.id:
+        return "Não é permitido excluir seu próprio usuário."
+
+    conn = get_db()
+
+    conn.execute(
+        "DELETE FROM usuarios WHERE username=?",
+        (username,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    registrar_historico(
+        current_user.id,
+        f"Excluiu usuário {username}"
+    )
+
+    return redirect("/usuarios")
+@app.route("/editar_cliente/<nome>", methods=["GET", "POST"])
+@login_required
+def editar_cliente(nome):
+
+    if not is_admin():
+        return "Acesso negado"
+
+    conn = get_db()
+
+    cliente = conn.execute(
+        "SELECT * FROM clientes WHERE nome=?",
+        (nome,)
+    ).fetchone()
+
+    if not cliente:
+        conn.close()
+        return redirect("/clientes")
+
+    if request.method == "POST":
+
+        novo_nome = request.form["nome"]
+
+        conn.execute(
+            "UPDATE clientes SET nome=? WHERE nome=?",
+            (novo_nome, nome)
+        )
+
+        conn.commit()
+
+        registrar_historico(
+            current_user.id,
+            f"Editou cliente {nome}"
+        )
+
+        conn.close()
+
+        return redirect("/clientes")
+
+    conn.close()
+
+    return render_template(
+        "editar_cliente.html",
+        cliente=cliente
+    )
+@app.route("/excluir_cliente/<nome>")
+@login_required
+def excluir_cliente(nome):
+
+    if not is_admin():
+        return "Acesso negado"
+
+    conn = get_db()
+
+    conn.execute(
+        "DELETE FROM clientes WHERE nome=?",
+        (nome,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    registrar_historico(
+        current_user.id,
+        f"Excluiu cliente {nome}"
+    )
+
+    return redirect("/clientes")
 # ================= RANKING =================
 
 @app.route("/ranking")
