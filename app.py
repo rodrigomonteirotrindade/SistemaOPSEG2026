@@ -607,46 +607,6 @@ def exportar_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-# ================= DASHBOARD =================
-
-@app.route("/grafico")
-@login_required
-def grafico():
-
-    conn = get_db()
-
-    if is_admin():
-        registros = conn.execute(
-            "SELECT * FROM registros"
-        ).fetchall()
-    else:
-        registros = conn.execute(
-            "SELECT * FROM registros WHERE colaborador=?",
-            (current_user.id,)
-        ).fetchall()
-
-    conn.close()
-
-    n1 = len([x for x in registros if x["nivel"] == "1"])
-    n2 = len([x for x in registros if x["nivel"] == "2"])
-    n3 = len([x for x in registros if x["nivel"] == "3"])
-    n4 = len([x for x in registros if x["nivel"] == "4"])
-
-    v1 = round(n1 * 1.99, 2)
-    v2 = round(n2 * 2.99, 2)
-    v3 = round(n3 * 4.99, 2)
-    v4 = round(n4 * 7.99, 2)
-
-    total = round(v1 + v2 + v3 + v4, 2)
-
-    return render_template(
-        "grafico.html",
-        n1=n1, n2=n2, n3=n3, n4=n4,
-        v1=v1, v2=v2, v3=v3, v4=v4,
-        total=total,
-        is_admin=is_admin(),
-        operadores=[]
-    )
 # ================= ALTERAR SENHA =================
 
 @app.route("/alterar_senha/<username>", methods=["POST"])

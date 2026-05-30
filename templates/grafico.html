@@ -1,111 +1,334 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
+
 <head>
+
 <meta charset="UTF-8">
-<title>Dashboard</title>
+
+<title>Dashboard Produção</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {
-    font-family: Arial;
-    background: #f1f5f9;
-    padding: 20px;
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI,Arial;
 }
 
-.card {
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    width: 400px;
+body{
+background:#eef2f7;
+padding:30px;
 }
 
-select {
-    padding: 8px;
-    border-radius: 5px;
-    margin-top: 10px;
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:25px;
 }
 
-h2 {
-    margin-bottom: 10px;
+h1{
+color:#111827;
 }
+
+.card{
+background:white;
+padding:25px;
+border-radius:14px;
+box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+
+.kpi{
+display:grid;
+grid-template-columns:repeat(5,1fr);
+gap:15px;
+margin-bottom:25px;
+}
+
+.kpi-card{
+background:white;
+padding:20px;
+border-radius:14px;
+box-shadow:0 2px 10px rgba(0,0,0,.08);
+text-align:center;
+}
+
+.kpi-card h3{
+font-size:14px;
+color:#64748b;
+margin-bottom:10px;
+}
+
+.kpi-card p{
+font-size:28px;
+font-weight:bold;
+color:#111827;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1.4fr 1fr;
+gap:25px;
+}
+
+select{
+
+padding:10px;
+border-radius:8px;
+border:1px solid #d1d5db;
+
+}
+
+button{
+
+padding:10px 15px;
+border:none;
+border-radius:8px;
+background:#2563eb;
+color:white;
+cursor:pointer;
+
+}
+
+button:hover{
+background:#1d4ed8;
+}
+
+.valor{
+
+font-size:17px;
+margin-bottom:12px;
+
+}
+
+.total{
+
+font-size:28px;
+font-weight:bold;
+color:#16a34a;
+
+}
+
+.voltar{
+
+display:inline-block;
+margin-top:25px;
+text-decoration:none;
+background:#111827;
+color:white;
+padding:12px 18px;
+border-radius:10px;
+
+}
+
+.voltar:hover{
+background:#1f2937;
+}
+
 </style>
+
 </head>
 
 <body>
 
-<h2>📊 Dashboard de Produção</h2>
+<div class="header">
 
-<!-- 🔥 SELETOR DE OPERADOR -->
+<h1>📊 Dashboard de Produção</h1>
+
 {% if is_admin %}
+
 <form method="GET">
 
-    <label><b>Selecionar Operador:</b></label><br>
+<select name="operador">
 
-    <select name="operador" onchange="this.form.submit()">
-        <option value="todos">Todos</option>
+<option value="todos">
+Todos Operadores
+</option>
 
-        {% for op in operadores %}
-        <option value="{{ op }}"
-        {% if op == operador_selecionado %}selected{% endif %}>
-            {{ op }}
-        </option>
-        {% endfor %}
+{% for op in operadores %}
 
-    </select>
+<option
+value="{{op}}"
 
-</form>
+{% if op==operador_selecionado %}
+selected
 {% endif %}
 
-<br>
+>
 
-<div class="card">
-    <canvas id="grafico"></canvas>
+{{op}}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+<button>
+Filtrar
+</button>
+
+</form>
+
+{% endif %}
+
 </div>
 
+<!-- KPI -->
+
+<div class="kpi">
+
+<div class="kpi-card">
+
+<h3>N1</h3>
+
+<p>{{n1}}</p>
+
+</div>
+
+<div class="kpi-card">
+
+<h3>N2</h3>
+
+<p>{{n2}}</p>
+
+</div>
+
+<div class="kpi-card">
+
+<h3>N3</h3>
+
+<p>{{n3}}</p>
+
+</div>
+
+<div class="kpi-card">
+
+<h3>N4</h3>
+
+<p>{{n4}}</p>
+
+</div>
+
+<div class="kpi-card">
+
+<h3>TOTAL</h3>
+
+<p>R$ {{total}}</p>
+
+</div>
+
+</div>
+
+<div class="grid">
+
+<!-- GRAFICO -->
+
+<div class="card">
+
+<canvas id="grafico"></canvas>
+
+</div>
+
+<!-- RESUMO -->
+
+<div class="card">
+
+<h2 style="margin-bottom:20px;">
+💰 Produção Financeira
+</h2>
+
+<div class="valor">
+
+🟢 N1 → {{n1}} registros → <b>R$ {{v1}}</b>
+
+</div>
+
+<div class="valor">
+
+🟡 N2 → {{n2}} registros → <b>R$ {{v2}}</b>
+
+</div>
+
+<div class="valor">
+
+🟠 N3 → {{n3}} registros → <b>R$ {{v3}}</b>
+
+</div>
+
+<div class="valor">
+
+🔴 N4 → {{n4}} registros → <b>R$ {{v4}}</b>
+
+</div>
+
+<hr style="margin:20px 0;">
+
+<div class="total">
+
+TOTAL: R$ {{total}}
+
+</div>
+
+</div>
+
+</div>
+
+<a href="/" class="voltar">
+
+⬅ Voltar Dashboard
+
+</a>
+
 <script>
-const ctx = document.getElementById("grafico");
 
-new Chart(ctx, {
-    type: 'pie',
-    data: {
-        labels: ["N1","N2","N3","N4"],
-        datasets: [{
-            data: [{{ n1 }}, {{ n2 }}, {{ n3 }}, {{ n4 }}],
-            backgroundColor: [
-                "#22c55e",
-                "#eab308",
-                "#f97316",
-                "#ef4444"
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'bottom'
-            }
-        }
-    }
+const ctx=document.getElementById("grafico");
+
+new Chart(ctx,{
+
+type:'pie',
+
+data:{
+
+labels:["N1","N2","N3","N4"],
+
+datasets:[{
+
+data:[{{n1}},{{n2}},{{n3}},{{n4}}],
+
+backgroundColor:[
+
+"#22c55e",
+"#eab308",
+"#f97316",
+"#ef4444"
+
+]
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+
+plugins:{
+
+legend:{
+position:'bottom'
+}
+
+}
+
+}
+
 });
+
 </script>
-
-<br>
-
-<h3>💰 Valores por nível</h3>
-
-<p><b>N1:</b> {{ n1 }} → R$ {{ v1 }}</p>
-<p><b>N2:</b> {{ n2 }} → R$ {{ v2 }}</p>
-<p><b>N3:</b> {{ n3 }} → R$ {{ v3 }}</p>
-<p><b>N4:</b> {{ n4 }} → R$ {{ v4 }}</p>
-
-<hr>
-
-<h2>💵 Total: R$ {{ total }}</h2>
-
-<br>
-<a href="/">⬅ Voltar para início</a>
 
 </body>
 </html>
