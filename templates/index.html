@@ -1,93 +1,299 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Painel</title>
+
+<title>Painel OPSEG</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body {
-    font-family: Arial;
-    background: #f1f5f9;
-    padding: 20px;
+
+body{
+    background:#f4f6f9;
 }
 
-.menu a {
-    margin-right: 10px;
+.navbar-brand{
+    font-weight:bold;
 }
 
-.card {
-    background: #fff;
-    padding: 15px;
-    margin-top: 10px;
-    border-radius: 8px;
+.card-top{
+    border:none;
+    border-radius:12px;
 }
+
+.table{
+    background:white;
+}
+
 </style>
+
 </head>
 
 <body>
 
-<h2>📊 Painel Principal</h2>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
 
-<div class="menu">
-    <a href="/grafico">📈 Gráfico</a>
-    <a href="/clientes">👥 Clientes</a>
-    <a href="/usuarios">🔐 Usuários</a>
-    <a href="/logout">🚪 Sair</a>
+<div class="container-fluid">
+
+<a class="navbar-brand" href="/">
+OPSEG
+</a>
+
+<div>
+
+<a class="btn btn-outline-light btn-sm" href="/grafico">
+Dashboard
+</a>
+
+{% if is_admin %}
+<a class="btn btn-outline-light btn-sm" href="/usuarios">
+Usuários
+</a>
+
+<a class="btn btn-outline-light btn-sm" href="/clientes">
+Clientes
+</a>
+
+<a class="btn btn-success btn-sm" href="/exportar_excel">
+Excel
+</a>
+{% endif %}
+
+<a class="btn btn-danger btn-sm" href="/logout">
+Sair
+</a>
+
 </div>
 
-<hr>
+</div>
 
-<!-- 🔥 FORMULÁRIO -->
-<div class="card">
-<form method="POST">
+</nav>
 
-    <label>Data:</label><br>
-    <input type="date" name="data" required><br><br>
+<div class="container mt-4">
 
-    <label>Título:</label><br>
-    <input name="titulo" required><br><br>
+<h2 class="mb-4">
+Painel Principal
+</h2>
 
-    <label>Cliente:</label><br>
-    <select name="cliente">
-        {% for c in clientes %}
-        <option>{{c}}</option>
-        {% endfor %}
-    </select><br><br>
+<!-- FILTROS -->
 
-    <label>Nível:</label><br>
-    <select name="nivel">
-        <option value="1">N1</option>
-        <option value="2">N2</option>
-        <option value="3">N3</option>
-        <option value="4">N4</option>
-    </select><br><br>
+<div class="card shadow-sm mb-4">
 
-    {% if is_admin %}
-    <label>Operador:</label><br>
-    <input name="colaborador" placeholder="Nome do operador"><br><br>
-    {% endif %}
+<div class="card-body">
 
-    <button>💾 Salvar</button>
+<form method="GET">
+
+<div class="row">
+
+<div class="col-md-4">
+<input
+type="text"
+name="busca"
+class="form-control"
+placeholder="Pesquisar título, cliente ou operador">
+</div>
+
+<div class="col-md-3">
+<input
+type="date"
+name="inicio"
+class="form-control">
+</div>
+
+<div class="col-md-3">
+<input
+type="date"
+name="fim"
+class="form-control">
+</div>
+
+<div class="col-md-2">
+<button class="btn btn-primary w-100">
+Pesquisar
+</button>
+</div>
+
+</div>
 
 </form>
+
 </div>
 
-<hr>
+</div>
 
-<h3>📋 Registros</h3>
+<!-- CADASTRO -->
+
+{% if is_admin %}
+
+<div class="card shadow-sm mb-4">
+
+<div class="card-header">
+Novo Registro
+</div>
+
+<div class="card-body">
+
+<form method="POST">
+
+<div class="row">
+
+<div class="col-md-2">
+<label>Data</label>
+<input type="date" name="data" class="form-control" required>
+</div>
+
+<div class="col-md-3">
+<label>Título</label>
+<input type="text" name="titulo" class="form-control" required>
+</div>
+
+<div class="col-md-2">
+<label>Cliente</label>
+
+<select name="cliente" class="form-control">
+
+{% for c in clientes %}
+<option value="{{c}}">
+{{c}}
+</option>
+{% endfor %}
+
+</select>
+
+</div>
+
+<div class="col-md-2">
+<label>Nível</label>
+
+<select name="nivel" class="form-control">
+
+<option value="1">N1</option>
+<option value="2">N2</option>
+<option value="3">N3</option>
+<option value="4">N4</option>
+
+</select>
+
+</div>
+
+<div class="col-md-2">
+<label>Operador</label>
+
+<select name="colaborador" class="form-control">
+
+{% for op in operadores %}
+<option value="{{op}}">
+{{op}}
+</option>
+{% endfor %}
+
+</select>
+
+</div>
+
+<div class="col-md-1 d-flex align-items-end">
+
+<button class="btn btn-success w-100">
+Salvar
+</button>
+
+</div>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+{% endif %}
+
+<!-- TABELA -->
+
+<div class="card shadow-sm">
+
+<div class="card-header">
+Registros
+</div>
+
+<div class="card-body">
+
+<div class="table-responsive">
+
+<table class="table table-striped table-hover">
+
+<thead>
+
+<tr>
+
+<th>ID</th>
+<th>Data</th>
+<th>Título</th>
+<th>Cliente</th>
+<th>Operador</th>
+<th>Nível</th>
+
+{% if is_admin %}
+<th>Ações</th>
+{% endif %}
+
+</tr>
+
+</thead>
+
+<tbody>
 
 {% for r in registros %}
-<div class="card">
-    <b>{{ r['titulo'] }}</b><br>
-    Cliente: {{ r['cliente'] }}<br>
-    Data: {{ r['data'] }}<br>
-    Operador: {{ r['colaborador'] }}<br>
-    Nível: {{ r['nivel'] }}<br><br>
 
-    <a href="/editar/{{ r['id'] }}">✏️ Editar</a> |
-    <a href="/excluir/{{ r['id'] }}">🗑 Excluir</a>
-</div>
+<tr>
+
+<td>{{r['id']}}</td>
+<td>{{r['data']}}</td>
+<td>{{r['titulo']}}</td>
+<td>{{r['cliente']}}</td>
+<td>{{r['colaborador']}}</td>
+<td>N{{r['nivel']}}</td>
+
+{% if is_admin %}
+<td>
+
+<a
+href="/editar/{{r['id']}}"
+class="btn btn-warning btn-sm">
+
+Editar
+
+</a>
+
+<a
+href="/excluir/{{r['id']}}"
+class="btn btn-danger btn-sm"
+onclick="return confirm('Deseja excluir este registro?')">
+
+Excluir
+
+</a>
+
+</td>
+{% endif %}
+
+</tr>
+
 {% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
 
 </body>
 </html>

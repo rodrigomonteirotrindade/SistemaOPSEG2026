@@ -1,11 +1,15 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, send_file
 import sqlite3
+from datetime import datetime
+from io import BytesIO
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from openpyxl import Workbook
 
 app = Flask(__name__)
-app.secret_key = "123"
+app.secret_key = "troque-esta-chave"
 
 # ================= BANCO =================
+
 def get_db():
     conn = sqlite3.connect("banco.db")
     conn.row_factory = sqlite3.Row
@@ -15,25 +19,60 @@ def criar_banco():
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("CREATE TABLE IF NOT EXISTS usuarios (username TEXT PRIMARY KEY, password TEXT, tipo TEXT)")
-    c.execute("CREATE TABLE IF NOT EXISTS clientes (nome TEXT PRIMARY KEY)")
-    c.execute("""CREATE TABLE IF NOT EXISTS registros (
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS usuarios(
+        username TEXT PRIMARY KEY,
+        password TEXT,
+        tipo TEXT
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS clientes(
+        nome TEXT PRIMARY KEY
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS registros(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         data TEXT,
         titulo TEXT,
         cliente TEXT,
         colaborador TEXT,
         nivel TEXT
-    )""")
+    )
+    """)
 
-    c.execute("INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','123','admin')")
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS historico(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario TEXT,
+        acao TEXT,
+        data_hora TEXT
+    )
+    """)
+
+    c.execute(
+        "INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','123','admin')"
+    )
 
     conn.commit()
     conn.close()
 
 criar_banco()
 
+def registrar_historico(usuario, acao):
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO historico(usuario,acao,data_hora) VALUES (?,?,?)",
+        (usuario, acao, datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+    )
+    conn.commit()
+    conn.close()
+
 # ================= LOGIN =================
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
@@ -46,27 +85,33 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT * FROM usuarios WHERE username=?", (user_id,))
-    u = c.fetchone()
+    u = conn.execute(
+        "SELECT * FROM usuarios WHERE username=?",
+        (user_id,)
+    ).fetchone()
     conn.close()
+
     if u:
         return User(u["username"], u["tipo"])
 
+    return None
+
 def is_admin():
-    return current_user.tipo == "admin"
+    return current_user.is_authenticated and current_user.tipo == "admin"
 
 # ================= LOGIN =================
-@app.route("/login", methods=["GET","POST"])
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        u = request.form["username"]
-        s = request.form["password"]
+        username = request.form["username"]
+        password = request.form["password"]
 
         conn = get_db()
-        c = conn.cursor()
-        c.execute("SELECT * FROM usuarios WHERE username=? AND password=?", (u,s))
-        user = c.fetchone()
+        user = conn.execute(
+            "SELECT * FROM usuarios WHERE username=? AND password=?",
+            (username, password)
+        ).fetchone()
         conn.close()
 
         if user:
@@ -82,97 +127,174 @@ def logout():
     return redirect("/login")
 
 # ================= HOME =================
-@app.route("/", methods=["GET","POST"])
+
+@app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
 
     conn = get_db()
     c = conn.cursor()
 
-    if is_admin():
-        c.execute("SELECT * FROM registros ORDER BY id DESC")
-    else:
-        c.execute("SELECT * FROM registros WHERE colaborador=?", (current_user.id,))
-
-    registros = c.fetchall()
-
     if request.method == "POST":
+
+        if not is_admin():
+            return "Sem permissão"
+
+        colaborador = request.form["colaborador"]
+
         c.execute("""
-        INSERT INTO registros (data,titulo,cliente,colaborador,nivel)
+        INSERT INTO registros(data,titulo,cliente,colaborador,nivel)
         VALUES (?,?,?,?,?)
         """, (
             request.form["data"],
             request.form["titulo"],
             request.form["cliente"],
-            current_user.id if not is_admin() else request.form["colaborador"],
+            colaborador,
             request.form["nivel"]
         ))
+
         conn.commit()
+
+        registrar_historico(
+            current_user.id,
+            f"Criou registro para {colaborador}"
+        )
+
         return redirect("/")
 
-    c.execute("SELECT nome FROM clientes")
-    clientes = [x["nome"] for x in c.fetchall()]
+    busca = request.args.get("busca", "")
+    inicio = request.args.get("inicio", "")
+    fim = request.args.get("fim", "")
+
+    sql = "SELECT * FROM registros WHERE 1=1"
+    params = []
+
+    if not is_admin():
+        sql += " AND colaborador=?"
+        params.append(current_user.id)
+
+    if busca:
+        sql += " AND (titulo LIKE ? OR cliente LIKE ? OR colaborador LIKE ?)"
+        termo = f"%{busca}%"
+        params.extend([termo, termo, termo])
+
+    if inicio:
+        sql += " AND data >= ?"
+        params.append(inicio)
+
+    if fim:
+        sql += " AND data <= ?"
+        params.append(fim)
+
+    sql += " ORDER BY id DESC"
+
+    registros = c.execute(sql, params).fetchall()
+
+    clientes = c.execute(
+        "SELECT nome FROM clientes ORDER BY nome"
+    ).fetchall()
+
+    operadores = c.execute(
+        "SELECT username FROM usuarios WHERE tipo='operador' ORDER BY username"
+    ).fetchall()
 
     conn.close()
 
-    return render_template("index.html",
+    return render_template(
+        "index.html",
         registros=registros,
-        clientes=clientes,
+        clientes=[x["nome"] for x in clientes],
+        operadores=[x["username"] for x in operadores],
         is_admin=is_admin()
     )
 
 # ================= EDITAR =================
-@app.route("/editar/<int:id>", methods=["GET","POST"])
+
+@app.route("/editar/<int:id>", methods=["GET", "POST"])
 @login_required
 def editar(id):
+
+    if not is_admin():
+        return "Sem permissão"
 
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("SELECT * FROM registros WHERE id=?", (id,))
-    r = c.fetchone()
+    registro = c.execute(
+        "SELECT * FROM registros WHERE id=?",
+        (id,)
+    ).fetchone()
 
-    if not r:
-        return "Erro"
-
-    if not is_admin() and r["colaborador"] != current_user.id:
-        return "Sem permissão"
+    if not registro:
+        conn.close()
+        return "Registro não encontrado"
 
     if request.method == "POST":
+
         c.execute("""
-        UPDATE registros SET data=?, titulo=?, cliente=?, colaborador=?, nivel=?
+        UPDATE registros
+        SET data=?, titulo=?, cliente=?, colaborador=?, nivel=?
         WHERE id=?
         """, (
             request.form["data"],
             request.form["titulo"],
             request.form["cliente"],
-            current_user.id if not is_admin() else request.form["colaborador"],
+            request.form["colaborador"],
             request.form["nivel"],
             id
         ))
+
         conn.commit()
+
+        registrar_historico(
+            current_user.id,
+            f"Editou registro {id}"
+        )
+
         return redirect("/")
 
-    c.execute("SELECT nome FROM clientes")
-    clientes = [x["nome"] for x in c.fetchall()]
+    clientes = c.execute(
+        "SELECT nome FROM clientes ORDER BY nome"
+    ).fetchall()
 
     conn.close()
 
-    return render_template("editar.html", r=r, clientes=clientes, is_admin=is_admin())
+    return render_template(
+        "editar.html",
+        r=registro,
+        clientes=[x["nome"] for x in clientes],
+        is_admin=True
+    )
 
 # ================= EXCLUIR =================
+
 @app.route("/excluir/<int:id>")
 @login_required
 def excluir(id):
+
+    if not is_admin():
+        return "Sem permissão"
+
     conn = get_db()
-    c = conn.cursor()
-    c.execute("DELETE FROM registros WHERE id=?", (id,))
+
+    conn.execute(
+        "DELETE FROM registros WHERE id=?",
+        (id,)
+    )
+
     conn.commit()
     conn.close()
+
+    registrar_historico(
+        current_user.id,
+        f"Excluiu registro {id}"
+    )
+
     return redirect("/")
 
 # ================= CLIENTES =================
-@app.route("/clientes", methods=["GET","POST"])
+
+@app.route("/clientes", methods=["GET", "POST"])
 @login_required
 def clientes():
 
@@ -180,24 +302,36 @@ def clientes():
         return "Acesso negado"
 
     conn = get_db()
-    c = conn.cursor()
 
     if request.method == "POST":
-        nome = request.form["nome"]
         try:
-            c.execute("INSERT INTO clientes VALUES (?)", (nome,))
+            conn.execute(
+                "INSERT INTO clientes VALUES (?)",
+                (request.form["nome"],)
+            )
             conn.commit()
+
+            registrar_historico(
+                current_user.id,
+                f"Criou cliente {request.form['nome']}"
+            )
         except:
             pass
 
-    c.execute("SELECT nome FROM clientes")
-    lista = c.fetchall()
+    lista = conn.execute(
+        "SELECT * FROM clientes ORDER BY nome"
+    ).fetchall()
+
     conn.close()
 
-    return render_template("clientes.html", clientes=lista)
+    return render_template(
+        "clientes.html",
+        clientes=lista
+    )
 
 # ================= USUÁRIOS =================
-@app.route("/usuarios", methods=["GET","POST"])
+
+@app.route("/usuarios", methods=["GET", "POST"])
 @login_required
 def usuarios():
 
@@ -205,50 +339,158 @@ def usuarios():
         return "Acesso negado"
 
     conn = get_db()
-    c = conn.cursor()
 
     if request.method == "POST":
         try:
-            c.execute("INSERT INTO usuarios VALUES (?,?,?)", (
-                request.form["username"],
-                request.form["password"],
-                request.form["tipo"]
-            ))
+            conn.execute(
+                "INSERT INTO usuarios VALUES (?,?,?)",
+                (
+                    request.form["username"],
+                    request.form["password"],
+                    request.form["tipo"]
+                )
+            )
             conn.commit()
+
+            registrar_historico(
+                current_user.id,
+                f"Criou usuário {request.form['username']}"
+            )
         except:
             pass
 
-    c.execute("SELECT username, tipo FROM usuarios")
-    lista = c.fetchall()
+    lista = conn.execute(
+        "SELECT username,tipo FROM usuarios ORDER BY username"
+    ).fetchall()
+
     conn.close()
 
-    return render_template("usuarios.html", usuarios=lista)
+    return render_template(
+        "usuarios.html",
+        usuarios=lista
+    )
 
-# ================= GRAFICO =================
+# ================= RANKING =================
+
+@app.route("/ranking")
+@login_required
+def ranking():
+
+    conn = get_db()
+
+    ranking = conn.execute("""
+    SELECT colaborador, COUNT(*) total
+    FROM registros
+    GROUP BY colaborador
+    ORDER BY total DESC
+    """).fetchall()
+
+    conn.close()
+
+    return render_template("ranking.html", ranking=ranking)
+
+# ================= HISTÓRICO =================
+
+@app.route("/historico")
+@login_required
+def historico():
+
+    if not is_admin():
+        return "Acesso negado"
+
+    conn = get_db()
+
+    dados = conn.execute("""
+    SELECT *
+    FROM historico
+    ORDER BY id DESC
+    """).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "historico.html",
+        historico=dados
+    )
+
+# ================= EXCEL =================
+
+@app.route("/exportar_excel")
+@login_required
+def exportar_excel():
+
+    conn = get_db()
+
+    if is_admin():
+        registros = conn.execute(
+            "SELECT * FROM registros ORDER BY id DESC"
+        ).fetchall()
+    else:
+        registros = conn.execute(
+            "SELECT * FROM registros WHERE colaborador=? ORDER BY id DESC",
+            (current_user.id,)
+        ).fetchall()
+
+    conn.close()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Registros"
+
+    ws.append([
+        "ID",
+        "Data",
+        "Título",
+        "Cliente",
+        "Operador",
+        "Nível"
+    ])
+
+    for r in registros:
+        ws.append([
+            r["id"],
+            r["data"],
+            r["titulo"],
+            r["cliente"],
+            r["colaborador"],
+            r["nivel"]
+        ])
+
+    arquivo = BytesIO()
+    wb.save(arquivo)
+    arquivo.seek(0)
+
+    return send_file(
+        arquivo,
+        as_attachment=True,
+        download_name="registros.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+# ================= DASHBOARD =================
+
 @app.route("/grafico")
 @login_required
 def grafico():
 
     conn = get_db()
-    c = conn.cursor()
-
-    operador = request.args.get("operador")
 
     if is_admin():
-        if operador and operador != "todos":
-            c.execute("SELECT * FROM registros WHERE colaborador=?", (operador,))
-        else:
-            c.execute("SELECT * FROM registros")
+        registros = conn.execute(
+            "SELECT * FROM registros"
+        ).fetchall()
     else:
-        operador = current_user.id
-        c.execute("SELECT * FROM registros WHERE colaborador=?", (operador,))
+        registros = conn.execute(
+            "SELECT * FROM registros WHERE colaborador=?",
+            (current_user.id,)
+        ).fetchall()
 
-    dados = c.fetchall()
+    conn.close()
 
-    n1 = len([x for x in dados if x["nivel"] == "1"])
-    n2 = len([x for x in dados if x["nivel"] == "2"])
-    n3 = len([x for x in dados if x["nivel"] == "3"])
-    n4 = len([x for x in dados if x["nivel"] == "4"])
+    n1 = len([x for x in registros if x["nivel"] == "1"])
+    n2 = len([x for x in registros if x["nivel"] == "2"])
+    n3 = len([x for x in registros if x["nivel"] == "3"])
+    n4 = len([x for x in registros if x["nivel"] == "4"])
 
     v1 = round(n1 * 1.99, 2)
     v2 = round(n2 * 2.99, 2)
@@ -257,22 +499,14 @@ def grafico():
 
     total = round(v1 + v2 + v3 + v4, 2)
 
-    operadores = []
-    if is_admin():
-        c.execute("SELECT DISTINCT colaborador FROM registros")
-        operadores = [x["colaborador"] for x in c.fetchall()]
-
-    conn.close()
-
-    return render_template("grafico.html",
-        n1=n1,n2=n2,n3=n3,n4=n4,
-        v1=v1,v2=v2,v3=v3,v4=v4,
+    return render_template(
+        "grafico.html",
+        n1=n1, n2=n2, n3=n3, n4=n4,
+        v1=v1, v2=v2, v3=v3, v4=v4,
         total=total,
-        operadores=operadores,
-        operador_selecionado=operador,
-        is_admin=is_admin()
+        is_admin=is_admin(),
+        operadores=[]
     )
 
-# ================= RUN =================
 if __name__ == "__main__":
     app.run(debug=True)
