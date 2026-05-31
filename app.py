@@ -1,5 +1,8 @@
+import os
 from flask import Flask, render_template, request, redirect, send_file
-import sqlite3
+import psycopg2
+import psycopg2.extras
+import os
 from datetime import datetime
 from io import BytesIO
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -11,8 +14,13 @@ app.secret_key = "troque-esta-chave"
 # ================= BANCO =================
 
 def get_db():
-    conn = sqlite3.connect("banco.db")
-    conn.row_factory = sqlite3.Row
+    DATABASE_URL = os.environ.get("DATABASE_URL")
+
+    conn = psycopg2.connect(
+        DATABASE_URL,
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
     return conn
 
 def criar_banco():
@@ -21,7 +29,7 @@ def criar_banco():
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS usuarios(
-        username TEXT PRIMARY KEY,
+        username VARCHAR(100) PRIMARY KEY,
         password TEXT,
         tipo TEXT
     )
@@ -35,7 +43,7 @@ def criar_banco():
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS registros(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         data TEXT,
         titulo TEXT,
         cliente TEXT,
@@ -46,28 +54,39 @@ def criar_banco():
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS historico(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
         usuario TEXT,
         acao TEXT,
         data_hora TEXT
     )
     """)
 
-    c.execute(
-        "INSERT OR IGNORE INTO usuarios VALUES ('Liderseg','123','admin')"
-    )
-
+    c.execute("""
+INSERT INTO usuarios(username,password,tipo)
+VALUES ('Liderseg','123','admin')
+ON CONFLICT (username) DO NOTHING
+""")
+    
     conn.commit()
     conn.close()
 
 criar_banco()
 
+
 def registrar_historico(usuario, acao):
     conn = get_db()
-    conn.execute(
-        "INSERT INTO historico(usuario,acao,data_hora) VALUES (?,?,?)",
+    c = conn.cursor()
+
+    c.execute(
+        """
+        INSERT INTO historico(usuario,acao,data_hora)
+        VALUES (%s,%s,%s)
+        """,
         (usuario, acao, datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
     )
+
+    conn.commit()
+    conn.close()
     conn.commit()
     conn.close()
 
@@ -86,7 +105,7 @@ class User(UserMixin):
 def load_user(user_id):
     conn = get_db()
     u = conn.execute(
-        "SELECT * FROM usuarios WHERE username=?",
+        "SELECT * FROM usuarios WHERE username=%s",
         (user_id,)
     ).fetchone()
     conn.close()
@@ -108,10 +127,42 @@ def login():
         password = request.form["password"]
 
         conn = get_db()
-        user = conn.execute(
-            "SELECT * FROM usuarios WHERE username=? AND password=?",
+      @app.route("/login", methods=["GET","POST"])
+def login():
+
+    if request.method == "POST":
+
+        username = request.form["username"]
+        password = request.form["password"]
+
+        conn = get_db()
+        c = conn.cursor()
+
+        c.execute(
+            """
+            SELECT * FROM usuarios
+            WHERE username=%s AND password=%s
+            """,
             (username, password)
-        ).fetchone()
+        )
+
+        user = c.fetchone()
+
+        conn.close()
+
+        if user:
+            login_user(
+                User(
+                    user["username"],
+                    user["tipo"]
+                )
+            )
+
+            return redirect("/")
+
+    return render_template("login.html")
+
+user = c.fetchone()
         conn.close()
 
         if user:
@@ -379,7 +430,7 @@ def editar_usuario(username):
     conn = get_db()
 
     usuario = conn.execute(
-        "SELECT * FROM usuarios WHERE username=?",
+        "SELECT * FROM usuarios WHERE username=%s",
         (username,)
     ).fetchone()
 
@@ -392,7 +443,7 @@ def editar_usuario(username):
         conn.execute("""
         UPDATE usuarios
         SET password=?, tipo=?
-        WHERE username=?
+        WHERE username=%s
         """,
         (
             request.form["password"],
@@ -430,7 +481,7 @@ def excluir_usuario(username):
     conn = get_db()
 
     conn.execute(
-        "DELETE FROM usuarios WHERE username=?",
+        "DELETE FROM usuarios WHERE username=%s",
         (username,)
     )
 
@@ -624,7 +675,7 @@ def alterar_senha(username):
     c.execute("""
     UPDATE usuarios
     SET password=?
-    WHERE username=?
+    WHERE username=%s
     """,(nova,username))
 
     conn.commit()
