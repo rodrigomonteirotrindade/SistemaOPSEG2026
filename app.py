@@ -85,8 +85,22 @@ def registrar_historico(usuario, acao):
         (usuario, acao, datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
     )
 
-    conn.commit()
-    conn.close()
+    def registrar_historico(usuario, acao):
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute(
+        """
+        INSERT INTO historico(usuario,acao,data_hora)
+        VALUES (%s,%s,%s)
+        """,
+        (
+            usuario,
+            acao,
+            datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        )
+    )
+
     conn.commit()
     conn.close()
 
@@ -104,10 +118,32 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     conn = get_db()
-    u = conn.execute(
-        "SELECT * FROM usuarios WHERE username=%s",
+    @login_manager.user_loader
+def load_user(user_id):
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute(
+        """
+        SELECT *
+        FROM usuarios
+        WHERE username=%s
+        """,
         (user_id,)
-    ).fetchone()
+    )
+
+    u = c.fetchone()
+
+    conn.close()
+
+    if u:
+        return User(
+            u["username"],
+            u["tipo"]
+        )
+
+    return None
     conn.close()
 
     if u:
@@ -120,14 +156,7 @@ def is_admin():
 
 # ================= LOGIN =================
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-
-        conn = get_db()
-      @app.route("/login", methods=["GET","POST"])
+@app.route("/login", methods=["GET","POST"])
 def login():
 
     if request.method == "POST":
@@ -140,8 +169,10 @@ def login():
 
         c.execute(
             """
-            SELECT * FROM usuarios
-            WHERE username=%s AND password=%s
+            SELECT *
+            FROM usuarios
+            WHERE username=%s
+            AND password=%s
             """,
             (username, password)
         )
@@ -161,104 +192,6 @@ def login():
             return redirect("/")
 
     return render_template("login.html")
-
-user = c.fetchone()
-        conn.close()
-
-        if user:
-            login_user(User(user["username"], user["tipo"]))
-            return redirect("/")
-
-    return render_template("login.html")
-
-@app.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    return redirect("/login")
-
-# ================= HOME =================
-
-@app.route("/", methods=["GET", "POST"])
-@login_required
-def index():
-
-    conn = get_db()
-    c = conn.cursor()
-
-    if request.method == "POST":
-
-        if not is_admin():
-            return "Sem permissão"
-
-        colaborador = request.form["colaborador"]
-
-        c.execute("""
-        INSERT INTO registros(data,titulo,cliente,colaborador,nivel)
-        VALUES (?,?,?,?,?)
-        """, (
-            request.form["data"],
-            request.form["titulo"],
-            request.form["cliente"],
-            colaborador,
-            request.form["nivel"]
-        ))
-
-        conn.commit()
-
-        registrar_historico(
-            current_user.id,
-            f"Criou registro para {colaborador}"
-        )
-
-        return redirect("/")
-
-    busca = request.args.get("busca", "")
-    inicio = request.args.get("inicio", "")
-    fim = request.args.get("fim", "")
-
-    sql = "SELECT * FROM registros WHERE 1=1"
-    params = []
-
-    if not is_admin():
-        sql += " AND colaborador=?"
-        params.append(current_user.id)
-
-    if busca:
-        sql += " AND (titulo LIKE ? OR cliente LIKE ? OR colaborador LIKE ?)"
-        termo = f"%{busca}%"
-        params.extend([termo, termo, termo])
-
-    if inicio:
-        sql += " AND data >= ?"
-        params.append(inicio)
-
-    if fim:
-        sql += " AND data <= ?"
-        params.append(fim)
-
-    sql += " ORDER BY id DESC"
-
-    registros = c.execute(sql, params).fetchall()
-
-    clientes = c.execute(
-        "SELECT nome FROM clientes ORDER BY nome"
-    ).fetchall()
-
-    operadores = c.execute(
-        "SELECT username FROM usuarios WHERE tipo='operador' ORDER BY username"
-    ).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "index.html",
-        registros=registros,
-        clientes=[x["nome"] for x in clientes],
-        operadores=[x["username"] for x in operadores],
-        is_admin=is_admin()
-    )
-
 # ================= EDITAR =================
 
 @app.route("/editar/<int:id>", methods=["GET", "POST"])
@@ -271,10 +204,17 @@ def editar(id):
     conn = get_db()
     c = conn.cursor()
 
-    registro = c.execute(
-        "SELECT * FROM registros WHERE id=?",
-        (id,)
-    ).fetchone()
+    c.execute(
+    """
+    SELECT *
+    FROM registros
+    WHERE id=%s
+    """,
+    (id,)
+)
+
+registro = c.fetchone()
+)
 
     if not registro:
         conn.close()
@@ -284,8 +224,12 @@ def editar(id):
 
         c.execute("""
         UPDATE registros
-        SET data=?, titulo=?, cliente=?, colaborador=?, nivel=?
-        WHERE id=?
+        SET data=%s,
+titulo=%s,
+cliente=%s,
+colaborador=%s,
+nivel=%s
+WHERE id=%s
         """, (
             request.form["data"],
             request.form["titulo"],
@@ -328,10 +272,16 @@ def excluir(id):
 
     conn = get_db()
 
-    conn.execute(
-        "DELETE FROM registros WHERE id=?",
-        (id,)
-    )
+   c = conn.cursor()
+
+c.execute(
+    """
+    DELETE
+    FROM registros
+    WHERE id=%s
+    """,
+    (id,)
+)
 
     conn.commit()
     conn.close()
@@ -356,8 +306,15 @@ def clientes():
 
     if request.method == "POST":
         try:
-            conn.execute(
-                "INSERT INTO clientes VALUES (?)",
+            c = conn.cursor()
+
+c.execute(
+    """
+    INSERT INTO clientes(nome)
+    VALUES (%s)
+    """,
+    (request.form["nome"],)
+)
                 (request.form["nome"],)
             )
             conn.commit()
@@ -394,7 +351,19 @@ def usuarios():
     if request.method == "POST":
         try:
             conn.execute(
-                "INSERT INTO usuarios VALUES (?,?,?)",
+                c = conn.cursor()
+
+c.execute(
+    """
+    INSERT INTO usuarios
+    VALUES (%s,%s,%s)
+    """,
+    (
+        request.form["username"],
+        request.form["password"],
+        request.form["tipo"]
+    )
+
                 (
                     request.form["username"],
                     request.form["password"],
