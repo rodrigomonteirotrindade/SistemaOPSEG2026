@@ -74,18 +74,7 @@ criar_banco()
 
 
 def registrar_historico(usuario, acao):
-    conn = get_db()
-    c = conn.cursor()
 
-    c.execute(
-        """
-        INSERT INTO historico(usuario,acao,data_hora)
-        VALUES (%s,%s,%s)
-        """,
-        (usuario, acao, datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-    )
-
-    def registrar_historico(usuario, acao):
     conn = get_db()
     c = conn.cursor()
 
@@ -95,6 +84,14 @@ def registrar_historico(usuario, acao):
         VALUES (%s,%s,%s)
         """,
         (
+            usuario,
+            acao,
+            datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        )
+    )
+
+    conn.commit()
+    conn.close()
             usuario,
             acao,
             datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -116,9 +113,6 @@ class User(UserMixin):
         self.tipo = tipo
 
 @login_manager.user_loader
-def load_user(user_id):
-    conn = get_db()
-    @login_manager.user_loader
 def load_user(user_id):
 
     conn = get_db()
@@ -144,13 +138,6 @@ def load_user(user_id):
         )
 
     return None
-    conn.close()
-
-    if u:
-        return User(u["username"], u["tipo"])
-
-    return None
-
 def is_admin():
     return current_user.is_authenticated and current_user.tipo == "admin"
 
