@@ -3,7 +3,7 @@
 
 <head>
 <meta charset="UTF-8">
-<title>Editar Cliente - OPSEG</title>
+<title>Editar Usuário - OPSEG</title>
 
 <style>
 *{
@@ -36,7 +36,8 @@ label{
     color:#111827;
 }
 
-input{
+input,
+select{
     width:100%;
     padding:12px;
     border:1px solid #d1d5db;
@@ -78,20 +79,36 @@ button:hover{
 
 <body>
 
-<h1>✏️ Editar Cliente</h1>
+<h1>✏️ Editar Usuário</h1>
 
 <div class="card">
 
 <form method="POST">
 
-    <label>Nome do Cliente</label>
-
+    <label>Usuário</label>
     <input
         type="text"
-        name="nome"
-        value="{{ cliente['nome'] }}"
-        required
+        value="{{ usuario['username'] }}"
+        disabled
     >
+
+    <label>Nova Senha</label>
+    <input
+        type="password"
+        name="password"
+        placeholder="Digite uma nova senha"
+    >
+
+    <label>Tipo de Usuário</label>
+    <select name="tipo" required>
+        <option value="operador" {% if usuario['tipo'] == 'operador' %}selected{% endif %}>
+            Operador
+        </option>
+
+        <option value="admin" {% if usuario['tipo'] == 'admin' %}selected{% endif %}>
+            Administrador
+        </option>
+    </select>
 
     <button type="submit">
         Salvar Alterações
@@ -101,8 +118,8 @@ button:hover{
 
 </div>
 
-<a href="/clientes" class="voltar">
-⬅ Voltar para Clientes
+<a href="/usuarios" class="voltar">
+⬅ Voltar para Usuários
 </a>
 
 </body>

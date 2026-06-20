@@ -1,24 +1,121 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-<meta charset="UTF-8">
-<title>Clientes</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<head>
+
+<meta charset="UTF-8">
+<title>Clientes - OPSEG</title>
 
 <style>
 
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Segoe UI, Arial, sans-serif;
+}
+
 body{
-    background:#f4f6f9;
+    background:#eef2f7;
+    padding:30px;
+}
+
+h1{
+    color:#111827;
+    margin-bottom:20px;
 }
 
 .card{
-    border:none;
-    border-radius:12px;
+    background:white;
+    padding:25px;
+    border-radius:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+    margin-bottom:25px;
 }
 
-.navbar-brand{
+input{
+    width:100%;
+    padding:12px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+}
+
+button{
+    background:#16a34a;
+    color:white;
+    border:none;
+    padding:12px 18px;
+    border-radius:8px;
+    cursor:pointer;
     font-weight:bold;
+}
+
+button:hover{
+    background:#15803d;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:#111827;
+    color:white;
+}
+
+th,td{
+    padding:14px;
+    text-align:center;
+}
+
+tbody tr:nth-child(even){
+    background:#f8fafc;
+}
+
+tbody tr:hover{
+    background:#e0f2fe;
+}
+
+.editar{
+    color:#2563eb;
+    text-decoration:none;
+    font-weight:bold;
+}
+
+.excluir{
+    color:#dc2626;
+    text-decoration:none;
+    font-weight:bold;
+}
+
+.voltar{
+    display:inline-block;
+    background:#111827;
+    color:white;
+    text-decoration:none;
+    padding:12px 18px;
+    border-radius:8px;
+    font-weight:bold;
+}
+
+.voltar:hover{
+    background:#1f2937;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 180px;
+    gap:15px;
+}
+
+.flash{
+    background:#dc2626;
+    color:white;
+    padding:12px;
+    border-radius:8px;
+    margin-bottom:15px;
 }
 
 </style>
@@ -27,67 +124,40 @@ body{
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<h1>🏢 Gerenciamento de Clientes</h1>
 
-<div class="container-fluid">
+{% with messages = get_flashed_messages() %}
+{% if messages %}
 
-<a class="navbar-brand" href="/">
-OPSEG
-</a>
+    {% for msg in messages %}
+        <div class="flash">
+            {{msg}}
+        </div>
+    {% endfor %}
 
-<div>
+{% endif %}
+{% endwith %}
 
-<a class="btn btn-outline-light btn-sm" href="/">
-Painel
-</a>
+<div class="card">
 
-<a class="btn btn-danger btn-sm" href="/logout">
-Sair
-</a>
-
-</div>
-
-</div>
-
-</nav>
-
-<div class="container mt-4">
-
-<h2 class="mb-4">
-Gerenciamento de Clientes
+<h2 style="margin-bottom:20px;">
+Cadastrar Cliente
 </h2>
-
-<div class="card shadow-sm mb-4">
-
-<div class="card-header">
-Novo Cliente
-</div>
-
-<div class="card-body">
 
 <form method="POST">
 
-<div class="row">
-
-<div class="col-md-10">
-
-<label>Nome do Cliente</label>
+<div class="form-grid">
 
 <input
-name="nome"
-class="form-control"
-placeholder="Digite o nome do cliente"
-required>
+    type="text"
+    name="nome"
+    placeholder="Nome do Cliente"
+    required
+>
 
-</div>
-
-<div class="col-md-2 d-flex align-items-end">
-
-<button class="btn btn-success w-100">
+<button type="submit">
 Cadastrar
 </button>
-
-</div>
 
 </div>
 
@@ -95,60 +165,66 @@ Cadastrar
 
 </div>
 
-</div>
+<div class="card">
 
-<div class="card shadow-sm">
-
-<div class="card-header">
+<h2 style="margin-bottom:20px;">
 Clientes Cadastrados
-</div>
+</h2>
 
-<div class="card-body">
-
-<div class="table-responsive">
-
-<table class="table table-striped table-hover">
+<table>
 
 <thead>
 
 <tr>
-
-<th>Cliente</th>
-<th>Ações</th>
-
+    <th>Cliente</th>
+    <th>Ações</th>
 </tr>
 
 </thead>
 
 <tbody>
 
-{% for c in clientes %}
+{% for cliente in clientes %}
 
 <tr>
 
 <td>
-{{ c['nome'] }}
+
+{% if cliente['nome'] %}
+    {{cliente['nome']}}
+{% else %}
+    {{cliente.nome}}
+{% endif %}
+
 </td>
 
 <td>
 
 <a
-href="/editar_cliente/{{c['nome']}}"
-class="btn btn-warning btn-sm">
-
+href="/editar_cliente/{% if cliente['nome'] %}{{cliente['nome']}}{% else %}{{cliente.nome}}{% endif %}"
+class="editar">
 Editar
-
 </a>
+
+|
 
 <a
-href="/excluir_cliente/{{c['nome']}}"
-class="btn btn-danger btn-sm"
+href="/excluir_cliente/{% if cliente['nome'] %}{{cliente['nome']}}{% else %}{{cliente.nome}}{% endif %}"
+class="excluir"
 onclick="return confirm('Deseja excluir este cliente?')">
-
 Excluir
-
 </a>
 
+</td>
+
+</tr>
+
+{% else %}
+
+<tr>
+
+<td colspan="2">
+Nenhum cliente cadastrado.
 </td>
 
 </tr>
@@ -161,11 +237,10 @@ Excluir
 
 </div>
 
-</div>
-
-</div>
-
-</div>
+<a href="/" class="voltar">
+⬅ Voltar ao Dashboard
+</a>
 
 </body>
 </html>
+```
