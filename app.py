@@ -15,19 +15,24 @@ app.secret_key = os.environ.get("SECRET_KEY", "troque-esta-chave-secreta")
 
 
 # =========================
-# BANCO POSTGRESQL
+# BANCO POSTGRESQL - RENDER
 # =========================
 
 def get_db():
     database_url = os.environ.get("DATABASE_URL")
 
     if not database_url:
-        raise Exception("DATABASE_URL não configurado.")
+        raise Exception("DATABASE_URL não configurado no Render.")
 
-    return psycopg2.connect(
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+    conn = psycopg2.connect(
         database_url,
         cursor_factory=psycopg2.extras.RealDictCursor
     )
+
+    return conn
 
 
 def criar_banco():
@@ -83,20 +88,23 @@ def criar_banco():
 
 
 def registrar_historico(usuario, acao):
-    conn = get_db()
-    c = conn.cursor()
+    try:
+        conn = get_db()
+        c = conn.cursor()
 
-    c.execute("""
-        INSERT INTO historico(usuario, acao, data_hora)
-        VALUES (%s, %s, %s)
-    """, (
-        usuario,
-        acao,
-        datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    ))
+        c.execute("""
+            INSERT INTO historico(usuario, acao, data_hora)
+            VALUES (%s, %s, %s)
+        """, (
+            usuario,
+            acao,
+            datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        ))
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 
 criar_banco()
@@ -357,6 +365,7 @@ def clientes():
                 conn.commit()
 
                 registrar_historico(current_user.id, f"Criou cliente {nome}")
+
             except Exception as e:
                 conn.rollback()
                 flash(f"Erro ao criar cliente: {e}")
