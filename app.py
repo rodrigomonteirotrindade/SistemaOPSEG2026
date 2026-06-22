@@ -15,7 +15,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "troque-esta-chave-secreta")
 
 
 # =========================
-# BANCO POSTGRESQL - RENDER
+# BANCO POSTGRESQL
 # =========================
 
 def get_db():
@@ -27,12 +27,10 @@ def get_db():
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-    conn = psycopg2.connect(
+    return psycopg2.connect(
         database_url,
         cursor_factory=psycopg2.extras.RealDictCursor
     )
-
-    return conn
 
 
 def criar_banco():
@@ -254,6 +252,75 @@ def index():
     c.execute("SELECT username FROM usuarios WHERE tipo='operador' ORDER BY username")
     operadores = c.fetchall()
 
+    # =========================
+    # KPIs AVANÇADOS
+    # =========================
+
+    filtro_usuario = ""
+    filtro_params = []
+
+    if not is_admin():
+        filtro_usuario = "WHERE colaborador=%s"
+        filtro_params.append(current_user.id)
+
+    c.execute(f"""
+        SELECT COUNT(*) AS total
+        FROM registros
+        {filtro_usuario}
+        {"AND" if filtro_usuario else "WHERE"} data = CURRENT_DATE
+    """, filtro_params)
+
+    registros_hoje = c.fetchone()["total"] or 0
+
+    c.execute(f"""
+        SELECT COUNT(*) AS total
+        FROM registros
+        {filtro_usuario}
+        {"AND" if filtro_usuario else "WHERE"} date_trunc('month', data) = date_trunc('month', CURRENT_DATE)
+    """, filtro_params)
+
+    registros_mes = c.fetchone()["total"] or 0
+
+    c.execute(f"""
+        SELECT COALESCE(SUM(
+            CASE
+                WHEN nivel='1' THEN 1.99
+                WHEN nivel='2' THEN 2.99
+                WHEN nivel='3' THEN 4.99
+                WHEN nivel='4' THEN 7.99
+                ELSE 0
+            END
+        ), 0) AS total
+        FROM registros
+        {filtro_usuario}
+    """, filtro_params)
+
+    total_produzido = round(float(c.fetchone()["total"] or 0), 2)
+
+    c.execute(f"""
+        SELECT colaborador, COUNT(*) AS total
+        FROM registros
+        {filtro_usuario}
+        GROUP BY colaborador
+        ORDER BY total DESC
+        LIMIT 1
+    """, filtro_params)
+
+    melhor = c.fetchone()
+    melhor_operador = melhor["colaborador"] if melhor else "-"
+
+    c.execute(f"""
+        SELECT cliente, COUNT(*) AS total
+        FROM registros
+        {filtro_usuario}
+        GROUP BY cliente
+        ORDER BY total DESC
+        LIMIT 1
+    """, filtro_params)
+
+    top_cliente = c.fetchone()
+    cliente_top = top_cliente["cliente"] if top_cliente else "-"
+
     conn.close()
 
     return render_template(
@@ -264,7 +331,12 @@ def index():
         busca=busca,
         inicio=inicio,
         fim=fim,
-        is_admin=is_admin()
+        is_admin=is_admin(),
+        registros_hoje=registros_hoje,
+        registros_mes=registros_mes,
+        total_produzido=f"{total_produzido:.2f}",
+        melhor_operador=melhor_operador,
+        cliente_top=cliente_top
     )
 
 
@@ -627,6 +699,7 @@ def ranking():
         c.execute("""
             SELECT colaborador, COUNT(*) AS total
             FROM registros
+            WHERE colaborador IS NOT NULL
             GROUP BY colaborador
             ORDER BY total DESC
         """)
@@ -768,16 +841,12 @@ def exportar_excel():
 
 
 # =========================
-# EXECUTAR
-# =========================
-# =========================
-# DIAGNOSTICO
+# DIAGNÓSTICO
 # =========================
 
 @app.route("/diagnostico")
 @login_required
 def diagnostico():
-
     try:
         conn = get_db()
         c = conn.cursor()
@@ -798,18 +867,21 @@ def diagnostico():
 
         return f"""
         <h2>Diagnóstico do Banco</h2>
-
         <b>Banco:</b> {banco}<br><br>
-
         <b>Total de Clientes:</b> {total_clientes}<br>
         <b>Total de Usuários:</b> {total_usuarios}<br>
         <b>Total de Registros:</b> {total_registros}<br><br>
-
         <b>DATABASE_URL configurada:</b>
         {'SIM' if os.environ.get('DATABASE_URL') else 'NÃO'}
         """
 
     except Exception as e:
         return f"ERRO: {e}"
+
+
+# =========================
+# EXECUTAR
+# =========================
+
 if __name__ == "__main__":
     app.run(debug=True)
