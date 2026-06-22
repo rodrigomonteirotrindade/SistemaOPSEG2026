@@ -770,6 +770,46 @@ def exportar_excel():
 # =========================
 # EXECUTAR
 # =========================
+# =========================
+# DIAGNOSTICO
+# =========================
 
+@app.route("/diagnostico")
+@login_required
+def diagnostico():
+
+    try:
+        conn = get_db()
+        c = conn.cursor()
+
+        c.execute("SELECT COUNT(*) AS total FROM clientes")
+        total_clientes = c.fetchone()["total"]
+
+        c.execute("SELECT COUNT(*) AS total FROM usuarios")
+        total_usuarios = c.fetchone()["total"]
+
+        c.execute("SELECT COUNT(*) AS total FROM registros")
+        total_registros = c.fetchone()["total"]
+
+        c.execute("SELECT current_database() AS banco")
+        banco = c.fetchone()["banco"]
+
+        conn.close()
+
+        return f"""
+        <h2>Diagnóstico do Banco</h2>
+
+        <b>Banco:</b> {banco}<br><br>
+
+        <b>Total de Clientes:</b> {total_clientes}<br>
+        <b>Total de Usuários:</b> {total_usuarios}<br>
+        <b>Total de Registros:</b> {total_registros}<br><br>
+
+        <b>DATABASE_URL configurada:</b>
+        {'SIM' if os.environ.get('DATABASE_URL') else 'NÃO'}
+        """
+
+    except Exception as e:
+        return f"ERRO: {e}"
 if __name__ == "__main__":
     app.run(debug=True)
