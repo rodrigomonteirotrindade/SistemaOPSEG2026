@@ -697,7 +697,18 @@ def ranking():
 
     if is_admin():
         c.execute("""
-            SELECT colaborador, COUNT(*) AS total
+            SELECT 
+                colaborador,
+                COUNT(*) AS total,
+                COALESCE(SUM(
+                    CASE
+                        WHEN nivel='1' THEN 1.99
+                        WHEN nivel='2' THEN 2.99
+                        WHEN nivel='3' THEN 4.99
+                        WHEN nivel='4' THEN 7.99
+                        ELSE 0
+                    END
+                ), 0) AS valor_total
             FROM registros
             WHERE colaborador IS NOT NULL
             GROUP BY colaborador
@@ -705,7 +716,18 @@ def ranking():
         """)
     else:
         c.execute("""
-            SELECT colaborador, COUNT(*) AS total
+            SELECT 
+                colaborador,
+                COUNT(*) AS total,
+                COALESCE(SUM(
+                    CASE
+                        WHEN nivel='1' THEN 1.99
+                        WHEN nivel='2' THEN 2.99
+                        WHEN nivel='3' THEN 4.99
+                        WHEN nivel='4' THEN 7.99
+                        ELSE 0
+                    END
+                ), 0) AS valor_total
             FROM registros
             WHERE colaborador=%s
             GROUP BY colaborador

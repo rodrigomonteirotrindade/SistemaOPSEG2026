@@ -1,20 +1,79 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
 <meta charset="UTF-8">
-<title>Ranking</title>
+<title>Ranking - OPSEG</title>
 
 <style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Segoe UI, Arial, sans-serif;
+}
+
 body{
-    font-family:Segoe UI;
     background:#eef2f7;
     padding:30px;
+}
+
+h1{
+    color:#111827;
+    margin-bottom:20px;
+}
+
+.topo{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+}
+
+.voltar{
+    background:#111827;
+    color:white;
+    text-decoration:none;
+    padding:12px 18px;
+    border-radius:10px;
+    font-weight:bold;
+}
+
+.voltar:hover{
+    background:#1f2937;
+}
+
+.kpi{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+    margin-bottom:25px;
 }
 
 .card{
     background:white;
     padding:25px;
-    border-radius:12px;
+    border-radius:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+
+.card h3{
+    font-size:14px;
+    color:#64748b;
+    margin-bottom:10px;
+    text-transform:uppercase;
+}
+
+.card p{
+    font-size:30px;
+    font-weight:bold;
+    color:#111827;
+}
+
+.tabela-card{
+    background:white;
+    padding:25px;
+    border-radius:14px;
     box-shadow:0 2px 10px rgba(0,0,0,.08);
 }
 
@@ -23,69 +82,193 @@ table{
     border-collapse:collapse;
 }
 
-th,td{
-    padding:14px;
-    text-align:center;
-}
-
 thead{
     background:#111827;
     color:white;
 }
 
-h1{
-    margin-bottom:20px;
+th,td{
+    padding:15px;
+    text-align:center;
 }
 
-.voltar{
-    display:inline-block;
-    margin-top:20px;
-    text-decoration:none;
+tbody tr:nth-child(even){
+    background:#f8fafc;
+}
+
+tbody tr:hover{
+    background:#e0f2fe;
+}
+
+.medalha{
+    font-size:26px;
+}
+
+.operador{
+    font-weight:bold;
+    color:#111827;
+}
+
+.barra-box{
+    background:#e5e7eb;
+    border-radius:20px;
+    overflow:hidden;
+    height:14px;
+    width:100%;
+}
+
+.barra{
+    height:14px;
     background:#2563eb;
-    color:white;
-    padding:10px 15px;
-    border-radius:8px;
+    border-radius:20px;
+}
+
+.total{
+    font-weight:bold;
+    color:#16a34a;
+}
+
+.sem-dados{
+    text-align:center;
+    padding:25px;
+    color:#64748b;
+}
+
+@media(max-width:900px){
+    .kpi{
+        grid-template-columns:1fr;
+    }
+
+    .topo{
+        flex-direction:column;
+        gap:15px;
+        align-items:flex-start;
+    }
+
+    table{
+        font-size:13px;
+    }
 }
 </style>
 </head>
 
 <body>
 
-<h1>🏆 Ranking de Operadores</h1>
+<div class="topo">
+    <h1>🏆 Ranking de Operadores</h1>
 
-<div class="card">
+    <a href="/" class="voltar">
+        ⬅ Voltar ao Dashboard
+    </a>
+</div>
+
+<div class="kpi">
+
+    <div class="card">
+        <h3>Total de Operadores</h3>
+        <p>{{ ranking|length }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Maior Produção</h3>
+        <p>
+            {% if ranking %}
+                {{ ranking[0]['colaborador'] }}
+            {% else %}
+                -
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="card">
+        <h3>Total Geral</h3>
+        <p>
+            {% set soma = namespace(valor=0) %}
+            {% for r in ranking %}
+                {% set soma.valor = soma.valor + r['total'] %}
+            {% endfor %}
+            {{ soma.valor }}
+        </p>
+    </div>
+
+</div>
+
+<div class="tabela-card">
 
 <table>
 
 <thead>
 <tr>
-<th>Posição</th>
-<th>Operador</th>
-<th>Total de Registros</th>
+    <th>Posição</th>
+    <th>Operador</th>
+    <th>Registros</th>
+    <th>Produção</th>
+    <th>Desempenho</th>
 </tr>
 </thead>
 
 <tbody>
 
-{% for r in ranking %}
+{% if ranking %}
+
+    {% set maior = ranking[0]['total'] %}
+
+    {% for r in ranking %}
+
+    <tr>
+
+        <td class="medalha">
+            {% if loop.index == 1 %}
+                🥇
+            {% elif loop.index == 2 %}
+                🥈
+            {% elif loop.index == 3 %}
+                🥉
+            {% else %}
+                {{ loop.index }}º
+            {% endif %}
+        </td>
+
+        <td class="operador">
+            {{ r['colaborador'] }}
+        </td>
+
+        <td>
+            {{ r['total'] }}
+        </td>
+
+        <td class="total">
+            R$ {{ "%.2f"|format(r['valor_total']|default(0)) }}
+        </td>
+
+        <td>
+            <div class="barra-box">
+                <div
+                    class="barra"
+                    style="width: {{ (r['total'] / maior * 100)|round(0) }}%;">
+                </div>
+            </div>
+        </td>
+
+    </tr>
+
+    {% endfor %}
+
+{% else %}
 
 <tr>
-<td>{{ loop.index }}</td>
-<td>{{ r['colaborador'] }}</td>
-<td>{{ r['total'] }}</td>
+    <td colspan="5" class="sem-dados">
+        Nenhum registro encontrado.
+    </td>
 </tr>
 
-{% endfor %}
+{% endif %}
 
 </tbody>
 
 </table>
 
 </div>
-
-<a href="/" class="voltar">
-⬅ Voltar
-</a>
 
 </body>
 </html>
