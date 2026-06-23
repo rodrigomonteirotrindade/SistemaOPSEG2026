@@ -71,6 +71,14 @@ def criar_banco():
         )
     """)
 
+    try:
+        c.execute("""
+            ALTER TABLE registros
+            ADD COLUMN IF NOT EXISTS importacao_id TEXT
+        """)
+    except Exception:
+        conn.rollback()
+
     c.execute("SELECT username FROM usuarios WHERE username=%s", ("Liderseg",))
     admin = c.fetchone()
 
@@ -252,10 +260,6 @@ def index():
     c.execute("SELECT username FROM usuarios WHERE tipo='operador' ORDER BY username")
     operadores = c.fetchall()
 
-    # =========================
-    # KPIs AVANÇADOS
-    # =========================
-
     filtro_usuario = ""
     filtro_params = []
 
@@ -409,6 +413,166 @@ def excluir(id):
     registrar_historico(current_user.id, f"Excluiu registro {id}")
 
     return redirect("/")
+
+
+# =========================
+# IMPORTAR EXCEL
+# =========================
+
+@app.route("/importar_excel", methods=["GET", "POST"])
+@login_required
+def importar_excel():
+    if not is_admin():
+        return "Acesso negado"
+
+    if request.method == "POST":
+        arquivo = request.files.get("arquivo")
+        data_lancamento = request.form.get("data")
+
+        if not arquivo or arquivo.filename == "":
+            flash("Selecione um arquivo Excel.")
+            return redirect("/importar_excel")
+
+        if not data_lancamento:
+            flash("Informe a data dos registros.")
+            return redirect("/importar_excel")
+
+        try:
+            wb = load_workbook(arquivo)
+            ws = wb.active
+
+            headers = {}
+            linha_cabecalho = None
+
+            for row in range(1, 10):
+                for col in range(1, ws.max_column + 1):
+                    valor = ws.cell(row=row, column=col).value
+
+                    if valor:
+                        nome = str(valor).strip().lower()
+
+                        if "título" in nome or "titulo" in nome:
+                            headers["titulo"] = col
+                            linha_cabecalho = row
+
+                        elif "colaborador" in nome:
+                            headers["colaborador"] = col
+
+                        elif "pontua" in nome:
+                            headers["nivel"] = col
+
+                        elif "posto" in nome:
+                            headers["cliente"] = col
+
+                if all(k in headers for k in ["titulo", "colaborador", "nivel", "cliente"]):
+                    break
+
+            if not all(k in headers for k in ["titulo", "colaborador", "nivel", "cliente"]):
+                flash("A planilha precisa ter as colunas: Título, Colaborador, Pontuação e Posto Trabal.")
+                return redirect("/importar_excel")
+
+            conn = get_db()
+            c = conn.cursor()
+
+            importados = 0
+            importacao_id = datetime.now().strftime("%Y%m%d%H%M%S")
+
+            for row in range(linha_cabecalho + 1, ws.max_row + 1):
+                titulo = ws.cell(row=row, column=headers["titulo"]).value
+                colaborador = ws.cell(row=row, column=headers["colaborador"]).value
+                nivel = ws.cell(row=row, column=headers["nivel"]).value
+                cliente = ws.cell(row=row, column=headers["cliente"]).value
+
+                if not titulo or not colaborador or not nivel or not cliente:
+                    continue
+
+                titulo = str(titulo).strip()
+                colaborador = str(colaborador).strip()
+                nivel = str(nivel).strip()
+                cliente = str(cliente).strip()
+
+                c.execute("""
+                    INSERT INTO clientes(nome)
+                    VALUES (%s)
+                    ON CONFLICT (nome) DO NOTHING
+                """, (cliente,))
+
+                c.execute("""
+                    INSERT INTO registros(data, titulo, cliente, colaborador, nivel, importacao_id)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    data_lancamento,
+                    titulo,
+                    cliente,
+                    colaborador,
+                    nivel,
+                    importacao_id
+                ))
+
+                importados += 1
+
+            conn.commit()
+            conn.close()
+
+            registrar_historico(
+                current_user.id,
+                f"Importou {importados} registros via Excel"
+            )
+
+            flash(f"{importados} registros importados com sucesso.")
+            return redirect("/")
+
+        except Exception as e:
+            flash(f"Erro ao importar Excel: {e}")
+            return redirect("/importar_excel")
+
+    return render_template("importar_excel.html")
+
+
+@app.route("/desfazer_ultima_importacao")
+@login_required
+def desfazer_ultima_importacao():
+    if not is_admin():
+        return "Acesso negado"
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT importacao_id
+        FROM registros
+        WHERE importacao_id IS NOT NULL
+        ORDER BY importacao_id DESC
+        LIMIT 1
+    """)
+
+    ultima = c.fetchone()
+
+    if not ultima:
+        conn.close()
+        flash("Nenhuma importação encontrada para desfazer.")
+        return redirect("/importar_excel")
+
+    importacao_id = ultima["importacao_id"]
+
+    c.execute("""
+        DELETE FROM registros
+        WHERE importacao_id=%s
+    """, (importacao_id,))
+
+    apagados = c.rowcount
+
+    conn.commit()
+    conn.close()
+
+    registrar_historico(
+        current_user.id,
+        f"Desfez importação {importacao_id} e apagou {apagados} registros"
+    )
+
+    flash(f"{apagados} registros da última importação foram apagados.")
+
+    return redirect("/importar_excel")
 
 
 # =========================
@@ -721,10 +885,7 @@ def ranking():
 
     conn.close()
 
-    return render_template(
-        "ranking.html",
-        ranking=dados
-    )
+    return render_template("ranking.html", ranking=dados)
 
 
 # =========================
@@ -817,14 +978,7 @@ def exportar_excel():
     ws = wb.active
     ws.title = "Registros"
 
-    ws.append([
-        "ID",
-        "Data",
-        "Título",
-        "Cliente",
-        "Operador",
-        "Nível"
-    ])
+    ws.append(["ID", "Data", "Título", "Cliente", "Operador", "Nível"])
 
     for r in registros:
         ws.append([
@@ -847,116 +1001,7 @@ def exportar_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-# =========================
-# IMPORTAR REGISTROS POR EXCEL
-# =========================
 
-@app.route("/importar_excel", methods=["GET", "POST"])
-@login_required
-def importar_excel():
-    if not is_admin():
-        return "Acesso negado"
-
-    if request.method == "POST":
-        arquivo = request.files.get("arquivo")
-        data_lancamento = request.form.get("data")
-
-        if not arquivo or arquivo.filename == "":
-            flash("Selecione um arquivo Excel.")
-            return redirect("/importar_excel")
-
-        if not data_lancamento:
-            flash("Informe a data dos registros.")
-            return redirect("/importar_excel")
-
-        try:
-            wb = load_workbook(arquivo)
-            ws = wb.active
-
-            headers = {}
-            linha_cabecalho = None
-
-            for row in range(1, 10):
-                for col in range(1, ws.max_column + 1):
-                    valor = ws.cell(row=row, column=col).value
-
-                    if valor:
-                        nome = str(valor).strip().lower()
-
-                        if "título" in nome or "titulo" in nome:
-                            headers["titulo"] = col
-                            linha_cabecalho = row
-
-                        elif "colaborador" in nome:
-                            headers["colaborador"] = col
-
-                        elif "pontua" in nome:
-                            headers["nivel"] = col
-
-                        elif "posto" in nome:
-                            headers["cliente"] = col
-
-                if all(k in headers for k in ["titulo", "colaborador", "nivel", "cliente"]):
-                    break
-
-            if not all(k in headers for k in ["titulo", "colaborador", "nivel", "cliente"]):
-                flash("A planilha precisa ter as colunas: Título, Colaborador, Pontuação e Posto Trabal.")
-                return redirect("/importar_excel")
-
-            conn = get_db()
-            c = conn.cursor()
-
-            importados = 0
-
-            for row in range(linha_cabecalho + 1, ws.max_row + 1):
-                titulo = ws.cell(row=row, column=headers["titulo"]).value
-                colaborador = ws.cell(row=row, column=headers["colaborador"]).value
-                nivel = ws.cell(row=row, column=headers["nivel"]).value
-                cliente = ws.cell(row=row, column=headers["cliente"]).value
-
-                if not titulo or not colaborador or not nivel or not cliente:
-                    continue
-
-                titulo = str(titulo).strip()
-                colaborador = str(colaborador).strip()
-                nivel = str(nivel).strip()
-                cliente = str(cliente).strip()
-
-                c.execute("""
-                    INSERT INTO clientes(nome)
-                    VALUES (%s)
-                    ON CONFLICT (nome) DO NOTHING
-                """, (cliente,))
-
-                c.execute("""
-                    INSERT INTO registros(data, titulo, cliente, colaborador, nivel)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (
-                    data_lancamento,
-                    titulo,
-                    cliente,
-                    colaborador,
-                    nivel
-                ))
-
-                importados += 1
-
-            conn.commit()
-            conn.close()
-
-            registrar_historico(
-                current_user.id,
-                f"Importou {importados} registros via Excel"
-            )
-
-            flash(f"{importados} registros importados com sucesso.")
-            return redirect("/")
-
-        except Exception as e:
-            flash(f"Erro ao importar Excel: {e}")
-            return redirect("/importar_excel")
-
-    return render_template("importar_excel.html")
 # =========================
 # DIAGNÓSTICO
 # =========================
@@ -995,10 +1040,6 @@ def diagnostico():
     except Exception as e:
         return f"ERRO: {e}"
 
-
-# =========================
-# EXECUTAR
-# =========================
 
 if __name__ == "__main__":
     app.run(debug=True)
