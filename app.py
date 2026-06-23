@@ -692,53 +692,39 @@ def limpar_historico():
 @app.route("/ranking")
 @login_required
 def ranking():
+    if not is_admin():
+        return "Acesso negado"
+
     conn = get_db()
     c = conn.cursor()
 
-    if is_admin():
-        c.execute("""
-            SELECT 
-                colaborador,
-                COUNT(*) AS total,
-                COALESCE(SUM(
-                    CASE
-                        WHEN nivel='1' THEN 1.99
-                        WHEN nivel='2' THEN 2.99
-                        WHEN nivel='3' THEN 4.99
-                        WHEN nivel='4' THEN 7.99
-                        ELSE 0
-                    END
-                ), 0) AS valor_total
-            FROM registros
-            WHERE colaborador IS NOT NULL
-            GROUP BY colaborador
-            ORDER BY total DESC
-        """)
-    else:
-        c.execute("""
-            SELECT 
-                colaborador,
-                COUNT(*) AS total,
-                COALESCE(SUM(
-                    CASE
-                        WHEN nivel='1' THEN 1.99
-                        WHEN nivel='2' THEN 2.99
-                        WHEN nivel='3' THEN 4.99
-                        WHEN nivel='4' THEN 7.99
-                        ELSE 0
-                    END
-                ), 0) AS valor_total
-            FROM registros
-            WHERE colaborador=%s
-            GROUP BY colaborador
-            ORDER BY total DESC
-        """, (current_user.id,))
+    c.execute("""
+        SELECT 
+            colaborador,
+            COUNT(*) AS total,
+            COALESCE(SUM(
+                CASE
+                    WHEN nivel='1' THEN 1.99
+                    WHEN nivel='2' THEN 2.99
+                    WHEN nivel='3' THEN 4.99
+                    WHEN nivel='4' THEN 7.99
+                    ELSE 0
+                END
+            ), 0) AS valor_total
+        FROM registros
+        WHERE colaborador IS NOT NULL
+        GROUP BY colaborador
+        ORDER BY total DESC
+    """)
 
     dados = c.fetchall()
 
     conn.close()
 
-    return render_template("ranking.html", ranking=dados)
+    return render_template(
+        "ranking.html",
+        ranking=dados
+    )
 
 
 # =========================

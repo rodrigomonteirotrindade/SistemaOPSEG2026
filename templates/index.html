@@ -261,9 +261,9 @@ tbody tr:hover{
     <div class="menu">
         <a href="/">Dashboard</a>
         <a href="/grafico">Gráfico</a>
-        <a href="/ranking">Ranking</a>
 
         {% if is_admin %}
+        <a href="/ranking">Ranking</a>
         <a href="/usuarios">Usuários</a>
         <a href="/clientes">Clientes</a>
         <a href="/historico">Histórico</a>
@@ -278,8 +278,6 @@ tbody tr:hover{
 <div class="container">
 
     <div class="titulo">Painel Principal</div>
-
-    <!-- KPIs PRINCIPAIS -->
 
     <div class="kpi">
 
@@ -308,8 +306,6 @@ tbody tr:hover{
         </div>
 
     </div>
-
-    <!-- KPIs AVANÇADOS -->
 
     <div class="kpi-secundario">
 
@@ -344,8 +340,6 @@ tbody tr:hover{
         </div>
 
     </div>
-
-    <!-- NOVO REGISTRO -->
 
     {% if is_admin %}
 
@@ -394,8 +388,6 @@ tbody tr:hover{
 
     {% endif %}
 
-    <!-- FILTROS -->
-
     <div class="filtro-box">
 
         <h2 style="margin-bottom:20px;">Filtros</h2>
@@ -434,8 +426,6 @@ tbody tr:hover{
         <a href="/" class="btn-limpar">Limpar filtros</a>
 
     </div>
-
-    <!-- TABELA -->
 
     <div class="table-box">
 
