@@ -6,7 +6,7 @@ import psycopg2
 import psycopg2.extras
 from flask import Flask, render_template, request, redirect, send_file, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
@@ -847,7 +847,116 @@ def exportar_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+# =========================
+# IMPORTAR REGISTROS POR EXCEL
+# =========================
 
+@app.route("/importar_excel", methods=["GET", "POST"])
+@login_required
+def importar_excel():
+    if not is_admin():
+        return "Acesso negado"
+
+    if request.method == "POST":
+        arquivo = request.files.get("arquivo")
+        data_lancamento = request.form.get("data")
+
+        if not arquivo or arquivo.filename == "":
+            flash("Selecione um arquivo Excel.")
+            return redirect("/importar_excel")
+
+        if not data_lancamento:
+            flash("Informe a data dos registros.")
+            return redirect("/importar_excel")
+
+        try:
+            wb = load_workbook(arquivo)
+            ws = wb.active
+
+            headers = {}
+            linha_cabecalho = None
+
+            for row in range(1, 10):
+                for col in range(1, ws.max_column + 1):
+                    valor = ws.cell(row=row, column=col).value
+
+                    if valor:
+                        nome = str(valor).strip().lower()
+
+                        if "título" in nome or "titulo" in nome:
+                            headers["titulo"] = col
+                            linha_cabecalho = row
+
+                        elif "colaborador" in nome:
+                            headers["colaborador"] = col
+
+                        elif "pontua" in nome:
+                            headers["nivel"] = col
+
+                        elif "posto" in nome:
+                            headers["cliente"] = col
+
+                if all(k in headers for k in ["titulo", "colaborador", "nivel", "cliente"]):
+                    break
+
+            if not all(k in headers for k in ["titulo", "colaborador", "nivel", "cliente"]):
+                flash("A planilha precisa ter as colunas: Título, Colaborador, Pontuação e Posto Trabal.")
+                return redirect("/importar_excel")
+
+            conn = get_db()
+            c = conn.cursor()
+
+            importados = 0
+
+            for row in range(linha_cabecalho + 1, ws.max_row + 1):
+                titulo = ws.cell(row=row, column=headers["titulo"]).value
+                colaborador = ws.cell(row=row, column=headers["colaborador"]).value
+                nivel = ws.cell(row=row, column=headers["nivel"]).value
+                cliente = ws.cell(row=row, column=headers["cliente"]).value
+
+                if not titulo or not colaborador or not nivel or not cliente:
+                    continue
+
+                titulo = str(titulo).strip()
+                colaborador = str(colaborador).strip()
+                nivel = str(nivel).strip()
+                cliente = str(cliente).strip()
+
+                c.execute("""
+                    INSERT INTO clientes(nome)
+                    VALUES (%s)
+                    ON CONFLICT (nome) DO NOTHING
+                """, (cliente,))
+
+                c.execute("""
+                    INSERT INTO registros(data, titulo, cliente, colaborador, nivel)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (
+                    data_lancamento,
+                    titulo,
+                    cliente,
+                    colaborador,
+                    nivel
+                ))
+
+                importados += 1
+
+            conn.commit()
+            conn.close()
+
+            registrar_historico(
+                current_user.id,
+                f"Importou {importados} registros via Excel"
+            )
+
+            flash(f"{importados} registros importados com sucesso.")
+            return redirect("/")
+
+        except Exception as e:
+            flash(f"Erro ao importar Excel: {e}")
+            return redirect("/importar_excel")
+
+    return render_template("importar_excel.html")
 # =========================
 # DIAGNÓSTICO
 # =========================
