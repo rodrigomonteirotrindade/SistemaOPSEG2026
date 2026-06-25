@@ -427,14 +427,9 @@ def importar_excel():
 
     if request.method == "POST":
         arquivo = request.files.get("arquivo")
-        data_lancamento = request.form.get("data")
 
         if not arquivo or arquivo.filename == "":
             flash("Selecione um arquivo Excel.")
-            return redirect("/importar_excel")
-
-        if not data_lancamento:
-            flash("Informe a data dos registros.")
             return redirect("/importar_excel")
 
         try:
@@ -451,9 +446,15 @@ def importar_excel():
                     if valor:
                         nome = str(valor).strip().lower()
 
-                        if "título" in nome or "titulo" in nome:
-                            headers["titulo"] = col
+                        if nome == "data":
+                            headers["data"] = col
                             linha_cabecalho = row
+
+                        elif "cliente" in nome:
+                            headers["cliente"] = col
+
+                        elif "título" in nome or "titulo" in nome:
+                            headers["titulo"] = col
 
                         elif "colaborador" in nome:
                             headers["colaborador"] = col
@@ -461,14 +462,11 @@ def importar_excel():
                         elif "pontua" in nome:
                             headers["nivel"] = col
 
-                        elif "posto" in nome:
-                            headers["cliente"] = col
-
-                if all(k in headers for k in ["titulo", "colaborador", "nivel", "cliente"]):
+                if all(k in headers for k in ["data", "cliente", "titulo", "colaborador", "nivel"]):
                     break
 
-            if not all(k in headers for k in ["titulo", "colaborador", "nivel", "cliente"]):
-                flash("A planilha precisa ter as colunas: Título, Colaborador, Pontuação e Posto Trabal.")
+            if not all(k in headers for k in ["data", "cliente", "titulo", "colaborador", "nivel"]):
+                flash("A planilha precisa ter as colunas: Data, Cliente, Título, Colaborador e Pontuação.")
                 return redirect("/importar_excel")
 
             conn = get_db()
@@ -478,18 +476,32 @@ def importar_excel():
             importacao_id = datetime.now().strftime("%Y%m%d%H%M%S")
 
             for row in range(linha_cabecalho + 1, ws.max_row + 1):
+                data_excel = ws.cell(row=row, column=headers["data"]).value
+                cliente = ws.cell(row=row, column=headers["cliente"]).value
                 titulo = ws.cell(row=row, column=headers["titulo"]).value
                 colaborador = ws.cell(row=row, column=headers["colaborador"]).value
                 nivel = ws.cell(row=row, column=headers["nivel"]).value
-                cliente = ws.cell(row=row, column=headers["cliente"]).value
 
-                if not titulo or not colaborador or not nivel or not cliente:
+                if not data_excel or not cliente or not titulo or not colaborador or not nivel:
                     continue
 
+                if isinstance(data_excel, datetime):
+                    data_lancamento = data_excel.date()
+                else:
+                    data_texto = str(data_excel).strip()
+
+                    try:
+                        data_lancamento = datetime.strptime(data_texto, "%d/%m/%Y").date()
+                    except Exception:
+                        try:
+                            data_lancamento = datetime.strptime(data_texto, "%Y-%m-%d").date()
+                        except Exception:
+                            continue
+
+                cliente = str(cliente).strip()
                 titulo = str(titulo).strip()
                 colaborador = str(colaborador).strip()
                 nivel = str(nivel).strip()
-                cliente = str(cliente).strip()
 
                 c.execute("""
                     INSERT INTO clientes(nome)
@@ -527,52 +539,6 @@ def importar_excel():
             return redirect("/importar_excel")
 
     return render_template("importar_excel.html")
-
-
-@app.route("/desfazer_ultima_importacao")
-@login_required
-def desfazer_ultima_importacao():
-    if not is_admin():
-        return "Acesso negado"
-
-    conn = get_db()
-    c = conn.cursor()
-
-    c.execute("""
-        SELECT importacao_id
-        FROM registros
-        WHERE importacao_id IS NOT NULL
-        ORDER BY importacao_id DESC
-        LIMIT 1
-    """)
-
-    ultima = c.fetchone()
-
-    if not ultima:
-        conn.close()
-        flash("Nenhuma importação encontrada para desfazer.")
-        return redirect("/importar_excel")
-
-    importacao_id = ultima["importacao_id"]
-
-    c.execute("""
-        DELETE FROM registros
-        WHERE importacao_id=%s
-    """, (importacao_id,))
-
-    apagados = c.rowcount
-
-    conn.commit()
-    conn.close()
-
-    registrar_historico(
-        current_user.id,
-        f"Desfez importação {importacao_id} e apagou {apagados} registros"
-    )
-
-    flash(f"{apagados} registros da última importação foram apagados.")
-
-    return redirect("/importar_excel")
 
 
 # =========================

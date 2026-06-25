@@ -1,124 +1,177 @@
-# =========================
-# IMPORTAR EXCEL
-# =========================
+<!DOCTYPE html>
+<html lang="pt-br">
 
-@app.route("/importar_excel", methods=["GET", "POST"])
-@login_required
-def importar_excel():
-    if not is_admin():
-        return "Acesso negado"
+<head>
+<meta charset="UTF-8">
+<title>Importar Excel - OPSEG</title>
 
-    if request.method == "POST":
-        arquivo = request.files.get("arquivo")
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Segoe UI, Arial, sans-serif;
+}
 
-        if not arquivo or arquivo.filename == "":
-            flash("Selecione um arquivo Excel.")
-            return redirect("/importar_excel")
+body{
+    background:#eef2f7;
+    padding:30px;
+}
 
-        try:
-            wb = load_workbook(arquivo, read_only=True, data_only=True)
-            ws = wb.active
+h1{
+    color:#111827;
+    margin-bottom:20px;
+}
 
-            headers = {}
-            linha_cabecalho = None
+.card{
+    background:white;
+    padding:30px;
+    border-radius:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+    max-width:750px;
+    margin-bottom:25px;
+}
 
-            for row in range(1, 10):
-                for col in range(1, ws.max_column + 1):
-                    valor = ws.cell(row=row, column=col).value
+.info{
+    background:#e0f2fe;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+    color:#0f172a;
+}
 
-                    if valor:
-                        nome = str(valor).strip().lower()
+.alerta{
+    background:#fee2e2;
+    color:#7f1d1d;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
 
-                        if nome == "data":
-                            headers["data"] = col
-                            linha_cabecalho = row
+.flash{
+    background:#2563eb;
+    color:white;
+    padding:12px;
+    border-radius:8px;
+    margin-bottom:15px;
+}
 
-                        elif "cliente" in nome:
-                            headers["cliente"] = col
+label{
+    font-weight:bold;
+    color:#111827;
+}
 
-                        elif "título" in nome or "titulo" in nome:
-                            headers["titulo"] = col
+input{
+    width:100%;
+    padding:12px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    margin-top:8px;
+    margin-bottom:20px;
+}
 
-                        elif "colaborador" in nome:
-                            headers["colaborador"] = col
+button{
+    background:#16a34a;
+    color:white;
+    border:none;
+    padding:12px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+}
 
-                        elif "pontua" in nome:
-                            headers["nivel"] = col
+button:hover{
+    background:#15803d;
+}
 
-                if all(k in headers for k in ["data", "cliente", "titulo", "colaborador", "nivel"]):
-                    break
+.btn-danger{
+    display:inline-block;
+    background:#dc2626;
+    color:white;
+    text-decoration:none;
+    padding:12px 18px;
+    border-radius:8px;
+    font-weight:bold;
+}
 
-            if not all(k in headers for k in ["data", "cliente", "titulo", "colaborador", "nivel"]):
-                flash("A planilha precisa ter as colunas: Data, Cliente, Título, Colaborador e Pontuação.")
-                return redirect("/importar_excel")
+.btn-danger:hover{
+    background:#b91c1c;
+}
 
-            conn = get_db()
-            c = conn.cursor()
+.voltar{
+    display:inline-block;
+    background:#111827;
+    color:white;
+    text-decoration:none;
+    padding:12px 18px;
+    border-radius:8px;
+    font-weight:bold;
+}
 
-            importados = 0
-            importacao_id = datetime.now().strftime("%Y%m%d%H%M%S")
+.voltar:hover{
+    background:#1f2937;
+}
+</style>
+</head>
 
-            for row in range(linha_cabecalho + 1, ws.max_row + 1):
-                data_excel = ws.cell(row=row, column=headers["data"]).value
-                cliente = ws.cell(row=row, column=headers["cliente"]).value
-                titulo = ws.cell(row=row, column=headers["titulo"]).value
-                colaborador = ws.cell(row=row, column=headers["colaborador"]).value
-                nivel = ws.cell(row=row, column=headers["nivel"]).value
+<body>
 
-                if not data_excel or not cliente or not titulo or not colaborador or not nivel:
-                    continue
+<h1>📥 Importar Registros por Excel</h1>
 
-                if isinstance(data_excel, datetime):
-                    data_lancamento = data_excel.date()
-                else:
-                    data_texto = str(data_excel).strip()
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+    {% for msg in messages %}
+        <div class="flash">{{ msg }}</div>
+    {% endfor %}
+{% endif %}
+{% endwith %}
 
-                    try:
-                        data_lancamento = datetime.strptime(data_texto, "%d/%m/%Y").date()
-                    except Exception:
-                        try:
-                            data_lancamento = datetime.strptime(data_texto, "%Y-%m-%d").date()
-                        except Exception:
-                            continue
+<div class="card">
 
-                cliente = str(cliente).strip()
-                titulo = str(titulo).strip()
-                colaborador = str(colaborador).strip()
-                nivel = str(nivel).strip()
+    <div class="info">
+        A planilha precisa conter as colunas:
+        <br><br>
+        <b>Título</b>, <b>Colaborador</b>, <b>Pontuação</b> e <b>Posto Trabal</b>.
+        <br><br>
+        A data escolhida abaixo será aplicada a todos os registros importados.
+    </div>
 
-                c.execute("""
-                    INSERT INTO clientes(nome)
-                    VALUES (%s)
-                    ON CONFLICT (nome) DO NOTHING
-                """, (cliente,))
+    <form method="POST" enctype="multipart/form-data">
 
-                c.execute("""
-                    INSERT INTO registros(data, titulo, cliente, colaborador, nivel, importacao_id)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                """, (
-                    data_lancamento,
-                    titulo,
-                    cliente,
-                    colaborador,
-                    nivel,
-                    importacao_id
-                ))
+        <label>Data dos Registros</label>
+        <input type="date" name="data" required>
 
-                importados += 1
+        <label>Arquivo Excel (.xlsx)</label>
+        <input type="file" name="arquivo" accept=".xlsx" required>
 
-            conn.commit()
-            conn.close()
+        <button type="submit">
+            Importar Registros
+        </button>
 
-            registrar_historico(
-                current_user.id,
-                f"Importou {importados} registros via Excel"
-            )
+    </form>
 
-            flash(f"{importados} registros importados com sucesso.")
-            return redirect("/")
+</div>
 
-        except Exception as e:
-            flash(f"Erro ao importar Excel: {e}")
-            return redirect("/importar_excel")
+<div class="card">
 
-    return render_template("importar_excel.html")
+    <div class="alerta">
+        <b>Atenção:</b> o botão abaixo apaga somente os registros da última importação feita pelo Excel.
+        <br>
+        Registros lançados manualmente não serão apagados.
+    </div>
+
+    <a
+        href="/desfazer_ultima_importacao"
+        class="btn-danger"
+        onclick="return confirm('Tem certeza que deseja apagar TODOS os registros da última importação?')">
+        🗑 Apagar Última Importação
+    </a>
+
+</div>
+
+<a href="/" class="voltar">
+    ⬅ Voltar ao Dashboard
+</a>
+
+</body>
+</html>
