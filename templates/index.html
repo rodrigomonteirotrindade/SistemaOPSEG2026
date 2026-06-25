@@ -268,9 +268,9 @@ tbody tr:hover{
         <a href="/clientes">Clientes</a>
         <a href="/importar_excel">Importar Excel</a>
         <a href="/historico">Histórico</a>
+        <a href="/exportar_excel">Excel</a>
         {% endif %}
 
-        <a href="/exportar_excel">Excel</a>
         <a href="/logout">Sair</a>
     </div>
 
@@ -288,11 +288,13 @@ tbody tr:hover{
             <span>Registros filtrados na tela</span>
         </div>
 
+        {% if is_admin %}
         <div class="card">
             <h3>Clientes</h3>
             <p>{{ clientes|length }}</p>
             <span>Clientes cadastrados</span>
         </div>
+        {% endif %}
 
         <div class="card">
             <h3>Operador Logado</h3>
@@ -328,11 +330,13 @@ tbody tr:hover{
             <span>Baseado nos níveis</span>
         </div>
 
+        {% if is_admin %}
         <div class="card">
             <h3>Melhor Operador</h3>
             <p>{{ melhor_operador|default('-') }}</p>
             <span>Maior número de registros</span>
         </div>
+        {% endif %}
 
         <div class="card">
             <h3>Cliente Mais Atendido</h3>
@@ -432,7 +436,9 @@ tbody tr:hover{
 
         <h2 style="margin-bottom:20px;">Registros</h2>
 
+        {% if is_admin %}
         <a href="/exportar_excel" class="exportar">Exportar Excel</a>
+        {% endif %}
 
         <table>
 
