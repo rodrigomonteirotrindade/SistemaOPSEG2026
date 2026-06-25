@@ -438,7 +438,7 @@ def importar_excel():
             return redirect("/importar_excel")
 
         try:
-            wb = load_workbook(arquivo)
+            wb = load_workbook(arquivo, read_only=True, data_only=True)
             ws = wb.active
 
             headers = {}
