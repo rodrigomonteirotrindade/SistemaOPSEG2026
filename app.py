@@ -71,6 +71,17 @@ def criar_banco():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS backups(
+            id SERIAL PRIMARY KEY,
+            nome_arquivo TEXT,
+            tipo TEXT,
+            usuario TEXT,
+            data_hora TEXT,
+            arquivo BYTEA
+        )
+    """)
+
     try:
         c.execute("""
             ALTER TABLE registros
@@ -111,6 +122,134 @@ def registrar_historico(usuario, acao):
         conn.close()
     except Exception:
         pass
+
+
+# =========================
+# BACKUP
+# =========================
+
+def gerar_backup_excel_bytes():
+    conn = get_db()
+    c = conn.cursor()
+
+    wb = Workbook()
+
+    # USUÁRIOS
+    ws = wb.active
+    ws.title = "Usuarios"
+
+    c.execute("SELECT username, tipo FROM usuarios ORDER BY username")
+    usuarios = c.fetchall()
+
+    ws.append(["Usuário", "Tipo"])
+    for u in usuarios:
+        ws.append([
+            u["username"],
+            u["tipo"]
+        ])
+
+    # CLIENTES
+    ws = wb.create_sheet("Clientes")
+
+    c.execute("SELECT nome FROM clientes ORDER BY nome")
+    clientes = c.fetchall()
+
+    ws.append(["Cliente"])
+    for cliente in clientes:
+        ws.append([
+            cliente["nome"]
+        ])
+
+    # REGISTROS
+    ws = wb.create_sheet("Registros")
+
+    c.execute("SELECT * FROM registros ORDER BY id")
+    registros = c.fetchall()
+
+    ws.append([
+        "ID",
+        "Data",
+        "Título",
+        "Cliente",
+        "Operador",
+        "Nível",
+        "Importação ID"
+    ])
+
+    for r in registros:
+        ws.append([
+            r["id"],
+            str(r["data"]) if r["data"] else "",
+            r["titulo"],
+            r["cliente"],
+            r["colaborador"],
+            r["nivel"],
+            r.get("importacao_id", "")
+        ])
+
+    # HISTÓRICO
+    ws = wb.create_sheet("Historico")
+
+    c.execute("SELECT * FROM historico ORDER BY id")
+    historico = c.fetchall()
+
+    ws.append([
+        "ID",
+        "Usuário",
+        "Ação",
+        "Data/Hora"
+    ])
+
+    for h in historico:
+        ws.append([
+            h["id"],
+            h["usuario"],
+            h["acao"],
+            h["data_hora"]
+        ])
+
+    conn.close()
+
+    arquivo = BytesIO()
+    wb.save(arquivo)
+    arquivo.seek(0)
+
+    return arquivo
+
+
+def salvar_backup_no_banco(tipo):
+    arquivo = gerar_backup_excel_bytes()
+    conteudo = arquivo.getvalue()
+
+    nome_arquivo = f"backup_opseg_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+    usuario = current_user.id if current_user.is_authenticated else "sistema"
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        INSERT INTO backups(nome_arquivo, tipo, usuario, data_hora, arquivo)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (
+        nome_arquivo,
+        tipo,
+        usuario,
+        datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        psycopg2.Binary(conteudo)
+    ))
+
+    conn.commit()
+    conn.close()
+
+    registrar_historico(
+        usuario,
+        f"Gerou backup: {tipo}"
+    )
+
+    arquivo.seek(0)
+
+    return arquivo, nome_arquivo
 
 
 criar_banco()
@@ -178,7 +317,7 @@ def login():
 @app.route("/logout")
 @login_required
 def logout():
-    registrar_historico(current_user.id, "Saiu do sistema")
+    registrar_historico(current_user.id, "Saiu no sistema")
     logout_user()
     return redirect("/login")
 
@@ -433,6 +572,8 @@ def importar_excel():
             return redirect("/importar_excel")
 
         try:
+            salvar_backup_no_banco("automatico_antes_importacao_excel")
+
             wb = load_workbook(arquivo, read_only=True, data_only=True)
             ws = wb.active
 
@@ -969,6 +1110,26 @@ def exportar_excel():
 
 
 # =========================
+# BACKUP MANUAL
+# =========================
+
+@app.route("/backup")
+@login_required
+def backup():
+    if not is_admin():
+        return "Acesso negado"
+
+    arquivo, nome_arquivo = salvar_backup_no_banco("manual")
+
+    return send_file(
+        arquivo,
+        as_attachment=True,
+        download_name=nome_arquivo,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+
+# =========================
 # DIAGNÓSTICO
 # =========================
 
@@ -988,6 +1149,9 @@ def diagnostico():
         c.execute("SELECT COUNT(*) AS total FROM registros")
         total_registros = c.fetchone()["total"]
 
+        c.execute("SELECT COUNT(*) AS total FROM backups")
+        total_backups = c.fetchone()["total"]
+
         c.execute("SELECT current_database() AS banco")
         banco = c.fetchone()["banco"]
 
@@ -998,7 +1162,8 @@ def diagnostico():
         <b>Banco:</b> {banco}<br><br>
         <b>Total de Clientes:</b> {total_clientes}<br>
         <b>Total de Usuários:</b> {total_usuarios}<br>
-        <b>Total de Registros:</b> {total_registros}<br><br>
+        <b>Total de Registros:</b> {total_registros}<br>
+        <b>Total de Backups:</b> {total_backups}<br><br>
         <b>DATABASE_URL configurada:</b>
         {'SIM' if os.environ.get('DATABASE_URL') else 'NÃO'}
         """
