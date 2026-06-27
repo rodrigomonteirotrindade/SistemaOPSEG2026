@@ -25,11 +25,17 @@ body{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin-bottom:25px;
+    margin-bottom:15px;
 }
 
 h1{
     color:#111827;
+}
+
+.mes-info{
+    color:#64748b;
+    font-weight:600;
+    margin-bottom:25px;
 }
 
 .kpi{
@@ -85,7 +91,15 @@ h1{
     height:360px;
 }
 
-select{
+.filtro-form{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+}
+
+select,
+input{
     padding:10px;
     border-radius:8px;
     border:1px solid #d1d5db;
@@ -156,6 +170,12 @@ button:hover{
         max-width:280px;
         height:280px;
     }
+
+    .filtro-form{
+        width:100%;
+        flex-direction:column;
+        align-items:stretch;
+    }
 }
 </style>
 
@@ -167,9 +187,9 @@ button:hover{
 
     <h1>📊 Dashboard de Produção</h1>
 
-    {% if is_admin %}
+    <form method="GET" class="filtro-form">
 
-    <form method="GET">
+        {% if is_admin %}
 
         <select name="operador">
 
@@ -181,7 +201,7 @@ button:hover{
 
             <option
                 value="{{op}}"
-                {% if op==operador_selecionado %}
+                {% if op == operador_selecionado %}
                 selected
                 {% endif %}
             >
@@ -192,14 +212,24 @@ button:hover{
 
         </select>
 
+        {% endif %}
+
+        <input
+            type="month"
+            name="mes"
+            value="{{ mes_selecionado }}"
+        >
+
         <button type="submit">
             Filtrar
         </button>
 
     </form>
 
-    {% endif %}
+</div>
 
+<div class="mes-info">
+    Visualizando mês: {{ mes_selecionado }}
 </div>
 
 <div class="kpi">
@@ -271,7 +301,7 @@ button:hover{
 
 </div>
 
-<a href="/" class="voltar">
+<a href="/?mes={{ mes_selecionado }}" class="voltar">
     ⬅ Voltar Dashboard
 </a>
 

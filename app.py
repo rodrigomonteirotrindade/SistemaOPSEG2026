@@ -33,6 +33,24 @@ def get_db():
     )
 
 
+def obter_periodo_mes(mes):
+    if not mes:
+        mes = datetime.now().strftime("%Y-%m")
+
+    try:
+        inicio = datetime.strptime(mes + "-01", "%Y-%m-%d").date()
+    except Exception:
+        mes = datetime.now().strftime("%Y-%m")
+        inicio = datetime.strptime(mes + "-01", "%Y-%m-%d").date()
+
+    if inicio.month == 12:
+        fim = inicio.replace(year=inicio.year + 1, month=1)
+    else:
+        fim = inicio.replace(month=inicio.month + 1)
+
+    return mes, inicio, fim
+
+
 def criar_banco():
     conn = get_db()
     c = conn.cursor()
@@ -82,13 +100,10 @@ def criar_banco():
         )
     """)
 
-    try:
-        c.execute("""
-            ALTER TABLE registros
-            ADD COLUMN IF NOT EXISTS importacao_id TEXT
-        """)
-    except Exception:
-        conn.rollback()
+    c.execute("""
+        ALTER TABLE registros
+        ADD COLUMN IF NOT EXISTS importacao_id TEXT
+    """)
 
     c.execute("SELECT username FROM usuarios WHERE username=%s", ("Liderseg",))
     admin = c.fetchone()
@@ -134,49 +149,26 @@ def gerar_backup_excel_bytes():
 
     wb = Workbook()
 
-    # USUÁRIOS
     ws = wb.active
     ws.title = "Usuarios"
+    ws.append(["Usuário", "Tipo"])
 
     c.execute("SELECT username, tipo FROM usuarios ORDER BY username")
-    usuarios = c.fetchall()
+    for u in c.fetchall():
+        ws.append([u["username"], u["tipo"]])
 
-    ws.append(["Usuário", "Tipo"])
-    for u in usuarios:
-        ws.append([
-            u["username"],
-            u["tipo"]
-        ])
-
-    # CLIENTES
     ws = wb.create_sheet("Clientes")
+    ws.append(["Cliente"])
 
     c.execute("SELECT nome FROM clientes ORDER BY nome")
-    clientes = c.fetchall()
+    for cliente in c.fetchall():
+        ws.append([cliente["nome"]])
 
-    ws.append(["Cliente"])
-    for cliente in clientes:
-        ws.append([
-            cliente["nome"]
-        ])
-
-    # REGISTROS
     ws = wb.create_sheet("Registros")
+    ws.append(["ID", "Data", "Título", "Cliente", "Operador", "Nível", "Importação ID"])
 
     c.execute("SELECT * FROM registros ORDER BY id")
-    registros = c.fetchall()
-
-    ws.append([
-        "ID",
-        "Data",
-        "Título",
-        "Cliente",
-        "Operador",
-        "Nível",
-        "Importação ID"
-    ])
-
-    for r in registros:
+    for r in c.fetchall():
         ws.append([
             r["id"],
             str(r["data"]) if r["data"] else "",
@@ -187,20 +179,11 @@ def gerar_backup_excel_bytes():
             r.get("importacao_id", "")
         ])
 
-    # HISTÓRICO
     ws = wb.create_sheet("Historico")
+    ws.append(["ID", "Usuário", "Ação", "Data/Hora"])
 
     c.execute("SELECT * FROM historico ORDER BY id")
-    historico = c.fetchall()
-
-    ws.append([
-        "ID",
-        "Usuário",
-        "Ação",
-        "Data/Hora"
-    ])
-
-    for h in historico:
+    for h in c.fetchall():
         ws.append([
             h["id"],
             h["usuario"],
@@ -222,7 +205,6 @@ def salvar_backup_no_banco(tipo):
     conteudo = arquivo.getvalue()
 
     nome_arquivo = f"backup_opseg_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-
     usuario = current_user.id if current_user.is_authenticated else "sistema"
 
     conn = get_db()
@@ -242,13 +224,9 @@ def salvar_backup_no_banco(tipo):
     conn.commit()
     conn.close()
 
-    registrar_historico(
-        usuario,
-        f"Gerou backup: {tipo}"
-    )
+    registrar_historico(usuario, f"Gerou backup: {tipo}")
 
     arquivo.seek(0)
-
     return arquivo, nome_arquivo
 
 
@@ -317,7 +295,7 @@ def login():
 @app.route("/logout")
 @login_required
 def logout():
-    registrar_historico(current_user.id, "Saiu no sistema")
+    registrar_historico(current_user.id, "Saiu do sistema")
     logout_user()
     return redirect("/login")
 
@@ -361,9 +339,15 @@ def index():
     busca = request.args.get("busca", "")
     inicio = request.args.get("inicio", "")
     fim = request.args.get("fim", "")
+    mes = request.args.get("mes", "")
 
-    sql = "SELECT * FROM registros WHERE 1=1"
-    params = []
+    mes_selecionado, inicio_mes, fim_mes = obter_periodo_mes(mes)
+
+    sql = """
+        SELECT * FROM registros
+        WHERE data >= %s AND data < %s
+    """
+    params = [inicio_mes, fim_mes]
 
     if not is_admin():
         sql += " AND colaborador=%s"
@@ -400,26 +384,26 @@ def index():
     operadores = c.fetchall()
 
     filtro_usuario = ""
-    filtro_params = []
+    filtro_params = [inicio_mes, fim_mes]
 
     if not is_admin():
-        filtro_usuario = "WHERE colaborador=%s"
+        filtro_usuario = "AND colaborador=%s"
         filtro_params.append(current_user.id)
 
     c.execute(f"""
         SELECT COUNT(*) AS total
         FROM registros
+        WHERE data = CURRENT_DATE
         {filtro_usuario}
-        {"AND" if filtro_usuario else "WHERE"} data = CURRENT_DATE
-    """, filtro_params)
+    """, [current_user.id] if not is_admin() else [])
 
     registros_hoje = c.fetchone()["total"] or 0
 
     c.execute(f"""
         SELECT COUNT(*) AS total
         FROM registros
+        WHERE data >= %s AND data < %s
         {filtro_usuario}
-        {"AND" if filtro_usuario else "WHERE"} date_trunc('month', data) = date_trunc('month', CURRENT_DATE)
     """, filtro_params)
 
     registros_mes = c.fetchone()["total"] or 0
@@ -435,6 +419,7 @@ def index():
             END
         ), 0) AS total
         FROM registros
+        WHERE data >= %s AND data < %s
         {filtro_usuario}
     """, filtro_params)
 
@@ -443,6 +428,7 @@ def index():
     c.execute(f"""
         SELECT colaborador, COUNT(*) AS total
         FROM registros
+        WHERE data >= %s AND data < %s
         {filtro_usuario}
         GROUP BY colaborador
         ORDER BY total DESC
@@ -455,6 +441,7 @@ def index():
     c.execute(f"""
         SELECT cliente, COUNT(*) AS total
         FROM registros
+        WHERE data >= %s AND data < %s
         {filtro_usuario}
         GROUP BY cliente
         ORDER BY total DESC
@@ -474,6 +461,7 @@ def index():
         busca=busca,
         inicio=inicio,
         fim=fim,
+        mes_selecionado=mes_selecionado,
         is_admin=is_admin(),
         registros_hoje=registros_hoje,
         registros_mes=registros_mes,
@@ -590,16 +578,12 @@ def importar_excel():
                         if nome == "data":
                             headers["data"] = col
                             linha_cabecalho = row
-
                         elif "cliente" in nome:
                             headers["cliente"] = col
-
                         elif "título" in nome or "titulo" in nome:
                             headers["titulo"] = col
-
                         elif "colaborador" in nome:
                             headers["colaborador"] = col
-
                         elif "pontua" in nome:
                             headers["nivel"] = col
 
@@ -630,7 +614,6 @@ def importar_excel():
                     data_lancamento = data_excel.date()
                 else:
                     data_texto = str(data_excel).strip()
-
                     try:
                         data_lancamento = datetime.strptime(data_texto, "%d/%m/%Y").date()
                     except Exception:
@@ -667,10 +650,7 @@ def importar_excel():
             conn.commit()
             conn.close()
 
-            registrar_historico(
-                current_user.id,
-                f"Importou {importados} registros via Excel"
-            )
+            registrar_historico(current_user.id, f"Importou {importados} registros via Excel")
 
             flash(f"{importados} registros importados com sucesso.")
             return redirect("/")
@@ -706,7 +686,6 @@ def clientes():
                     ON CONFLICT (nome) DO NOTHING
                 """, (nome,))
                 conn.commit()
-
                 registrar_historico(current_user.id, f"Criou cliente {nome}")
 
             except Exception as e:
@@ -741,14 +720,9 @@ def editar_cliente(nome):
         novo_nome = request.form["nome"].strip()
 
         if novo_nome:
-            c.execute(
-                "UPDATE clientes SET nome=%s WHERE nome=%s",
-                (novo_nome, nome)
-            )
-
+            c.execute("UPDATE clientes SET nome=%s WHERE nome=%s", (novo_nome, nome))
             conn.commit()
             conn.close()
-
             registrar_historico(current_user.id, f"Editou cliente {nome}")
             return redirect("/clientes")
 
@@ -803,7 +777,6 @@ def usuarios():
                 """, (username, senha_hash, tipo))
 
                 conn.commit()
-
                 registrar_historico(current_user.id, f"Criou usuário {username}")
 
             except Exception as e:
@@ -840,13 +813,11 @@ def editar_usuario(username):
 
         if nova_senha:
             senha_hash = generate_password_hash(nova_senha)
-
             c.execute("""
                 UPDATE usuarios
                 SET password=%s, tipo=%s
                 WHERE username=%s
             """, (senha_hash, tipo, username))
-
         else:
             c.execute("""
                 UPDATE usuarios
@@ -1006,15 +977,29 @@ def grafico():
     c = conn.cursor()
 
     operador = request.args.get("operador", "todos")
+    mes = request.args.get("mes", "")
+
+    mes_selecionado, inicio_mes, fim_mes = obter_periodo_mes(mes)
 
     if is_admin():
         if operador == "todos":
-            c.execute("SELECT * FROM registros")
+            c.execute("""
+                SELECT * FROM registros
+                WHERE data >= %s AND data < %s
+            """, (inicio_mes, fim_mes))
         else:
-            c.execute("SELECT * FROM registros WHERE colaborador=%s", (operador,))
+            c.execute("""
+                SELECT * FROM registros
+                WHERE colaborador=%s
+                AND data >= %s AND data < %s
+            """, (operador, inicio_mes, fim_mes))
     else:
         operador = current_user.id
-        c.execute("SELECT * FROM registros WHERE colaborador=%s", (current_user.id,))
+        c.execute("""
+            SELECT * FROM registros
+            WHERE colaborador=%s
+            AND data >= %s AND data < %s
+        """, (current_user.id, inicio_mes, fim_mes))
 
     dados = c.fetchall()
 
@@ -1056,6 +1041,7 @@ def grafico():
         total=total,
         operadores=operadores,
         operador_selecionado=operador,
+        mes_selecionado=mes_selecionado,
         is_admin=is_admin()
     )
 

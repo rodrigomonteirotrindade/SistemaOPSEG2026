@@ -112,7 +112,7 @@ body{
 
 .filtro-grid{
     display:grid;
-    grid-template-columns:2fr 1fr 1fr 1fr;
+    grid-template-columns:2fr 1fr 1fr 1fr 180px;
     gap:15px;
 }
 
@@ -217,6 +217,13 @@ tbody tr:hover{
     color:#dc2626;
 }
 
+.mes-info{
+    margin-top:-15px;
+    margin-bottom:25px;
+    color:#64748b;
+    font-weight:600;
+}
+
 @media(max-width:1000px){
     .kpi,
     .kpi-secundario{
@@ -260,14 +267,14 @@ tbody tr:hover{
 
     <div class="menu">
         <a href="/">Dashboard</a>
-        <a href="/grafico">Gráfico</a>
+        <a href="/grafico?mes={{ mes_selecionado }}">Gráfico</a>
 
         {% if is_admin %}
         <a href="/ranking">Ranking</a>
         <a href="/usuarios">Usuários</a>
         <a href="/clientes">Clientes</a>
         <a href="/importar_excel">Importar Excel</a>
-        <a href="/backup">💾 Backup</a> 
+        <a href="/backup">💾 Backup</a>
         <a href="/historico">Histórico</a>
         <a href="/exportar_excel">Excel</a>
         {% endif %}
@@ -281,12 +288,16 @@ tbody tr:hover{
 
     <div class="titulo">Painel Principal</div>
 
+    <div class="mes-info">
+        Visualizando mês: {{ mes_selecionado }}
+    </div>
+
     <div class="kpi">
 
         <div class="card">
             <h3>Total de Registros</h3>
             <p>{{ registros|length }}</p>
-            <span>Registros filtrados na tela</span>
+            <span>Registros do mês selecionado</span>
         </div>
 
         {% if is_admin %}
@@ -322,27 +333,27 @@ tbody tr:hover{
         <div class="card">
             <h3>Registros do Mês</h3>
             <p>{{ registros_mes|default(0) }}</p>
-            <span>Produção mensal</span>
+            <span>Mês selecionado</span>
         </div>
 
         <div class="card">
             <h3>Total Produzido</h3>
             <p>R$ {{ total_produzido|default('0.00') }}</p>
-            <span>Baseado nos níveis</span>
+            <span>Baseado no mês selecionado</span>
         </div>
 
         {% if is_admin %}
         <div class="card">
             <h3>Melhor Operador</h3>
             <p>{{ melhor_operador|default('-') }}</p>
-            <span>Maior número de registros</span>
+            <span>Maior número de registros no mês</span>
         </div>
         {% endif %}
 
         <div class="card">
             <h3>Cliente Mais Atendido</h3>
             <p>{{ cliente_top|default('-') }}</p>
-            <span>Cliente com mais registros</span>
+            <span>Cliente com mais registros no mês</span>
         </div>
 
     </div>
@@ -410,6 +421,12 @@ tbody tr:hover{
                 >
 
                 <input
+                    type="month"
+                    name="mes"
+                    value="{{ mes_selecionado }}"
+                >
+
+                <input
                     type="date"
                     name="inicio"
                     value="{{ inicio if inicio else '' }}"
@@ -435,7 +452,7 @@ tbody tr:hover{
 
     <div class="table-box">
 
-        <h2 style="margin-bottom:20px;">Registros</h2>
+        <h2 style="margin-bottom:20px;">Registros do mês selecionado</h2>
 
         {% if is_admin %}
         <a href="/exportar_excel" class="exportar">Exportar Excel</a>
@@ -500,7 +517,11 @@ tbody tr:hover{
                 {% else %}
 
                 <tr>
-                    <td colspan="7">Nenhum registro encontrado.</td>
+                    {% if is_admin %}
+                    <td colspan="7">Nenhum registro encontrado para o mês selecionado.</td>
+                    {% else %}
+                    <td colspan="6">Nenhum registro encontrado para o mês selecionado.</td>
+                    {% endif %}
                 </tr>
 
                 {% endfor %}
