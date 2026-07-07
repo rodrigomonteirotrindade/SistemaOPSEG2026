@@ -3,7 +3,9 @@
 
 <head>
 <meta charset="UTF-8">
-<title>OPSEG Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SGR - Dashboard Operacional</title>
 
 <style>
 *{
@@ -15,51 +17,138 @@
 
 body{
     background:#eef2f7;
+    color:#111827;
 }
+
+/* NAVBAR */
 
 .navbar{
     background:#111827;
     color:white;
-    padding:18px 30px;
+    padding:16px 30px;
     display:flex;
     justify-content:space-between;
     align-items:center;
+    gap:20px;
+    flex-wrap:wrap;
 }
 
-.logo{
+.brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.brand-icon{
+    width:46px;
+    height:46px;
+    background:linear-gradient(135deg,#2563eb,#16a34a);
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     font-size:24px;
-    font-weight:700;
+}
+
+.brand-title{
+    font-size:27px;
+    font-weight:800;
+    line-height:25px;
+}
+
+.brand-subtitle{
+    font-size:12px;
+    color:#cbd5e1;
+    margin-top:4px;
+}
+
+.menu{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
 }
 
 .menu a{
     color:white;
     text-decoration:none;
-    margin-left:12px;
-    padding:8px 12px;
-    border-radius:6px;
+    padding:8px 11px;
+    border-radius:8px;
     font-weight:600;
+    font-size:14px;
+    transition:.2s;
 }
 
 .menu a:hover{
     background:#2563eb;
 }
 
+.user-badge{
+    display:inline-flex;
+    flex-direction:column;
+    align-items:flex-start;
+    color:white;
+    padding:7px 13px;
+    background:#1f2937;
+    border-radius:10px;
+    font-weight:bold;
+    font-size:13px;
+}
+
+.user-badge small{
+    font-size:11px;
+    color:#93c5fd;
+    font-weight:500;
+}
+
+/* CONTAINER */
+
 .container{
     padding:35px;
 }
 
-.titulo{
-    font-size:34px;
-    font-weight:700;
-    margin-bottom:25px;
-    color:#111827;
+/* HERO */
+
+.hero{
+    background:linear-gradient(135deg,#1e3a8a,#111827);
+    color:white;
+    padding:30px;
+    border-radius:18px;
+    margin-bottom:30px;
+    box-shadow:0 4px 18px rgba(0,0,0,.18);
 }
+
+.hero h1{
+    font-size:34px;
+    margin-bottom:8px;
+}
+
+.hero p{
+    color:#dbeafe;
+    font-size:15px;
+}
+
+.hero-info{
+    margin-top:18px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.hero-tag{
+    background:rgba(255,255,255,.12);
+    padding:8px 14px;
+    border-radius:30px;
+    font-size:13px;
+}
+
+/* KPI */
 
 .kpi{
     display:grid;
     grid-template-columns:repeat(4,1fr);
     gap:20px;
-    margin-bottom:30px;
+    margin-bottom:25px;
 }
 
 .kpi-secundario{
@@ -72,7 +161,7 @@ body{
 .card{
     background:white;
     padding:25px;
-    border-radius:14px;
+    border-radius:16px;
     box-shadow:0 2px 10px rgba(0,0,0,0.08);
 }
 
@@ -94,15 +183,24 @@ body{
     color:#64748b;
 }
 
+/* BOXES */
+
 .form-box,
 .table-box,
 .filtro-box{
     background:white;
     padding:25px;
-    border-radius:14px;
+    border-radius:16px;
     margin-bottom:30px;
     box-shadow:0 2px 10px rgba(0,0,0,0.08);
 }
+
+.box-title{
+    margin-bottom:20px;
+    color:#111827;
+}
+
+/* FORMS */
 
 .form-grid{
     display:grid;
@@ -112,16 +210,16 @@ body{
 
 .filtro-grid{
     display:grid;
-    grid-template-columns:2fr 1fr 1fr 1fr 180px;
+    grid-template-columns:2fr 1fr 1fr 1fr;
     gap:15px;
 }
 
 input,
 select{
     width:100%;
-    padding:11px;
+    padding:12px;
     border:1px solid #d1d5db;
-    border-radius:8px;
+    border-radius:9px;
 }
 
 button{
@@ -129,7 +227,7 @@ button{
     color:white;
     border:none;
     padding:12px;
-    border-radius:8px;
+    border-radius:9px;
     cursor:pointer;
     font-weight:bold;
 }
@@ -142,7 +240,7 @@ button:hover{
     background:#64748b;
     color:white;
     padding:12px;
-    border-radius:8px;
+    border-radius:9px;
     text-decoration:none;
     display:inline-block;
     font-weight:bold;
@@ -158,7 +256,7 @@ button:hover{
     background:#2563eb;
     color:white;
     padding:10px 15px;
-    border-radius:8px;
+    border-radius:9px;
     text-decoration:none;
     font-weight:bold;
 }
@@ -166,6 +264,8 @@ button:hover{
 .exportar:hover{
     background:#1d4ed8;
 }
+
+/* TABLE */
 
 table{
     width:100%;
@@ -217,14 +317,18 @@ tbody tr:hover{
     color:#dc2626;
 }
 
-.mes-info{
-    margin-top:-15px;
-    margin-bottom:25px;
+/* FOOTER */
+
+.footer{
+    text-align:center;
     color:#64748b;
-    font-weight:600;
+    font-size:13px;
+    padding:25px;
 }
 
-@media(max-width:1000px){
+/* RESPONSIVO */
+
+@media(max-width:1100px){
     .kpi,
     .kpi-secundario{
         grid-template-columns:1fr 1fr;
@@ -236,24 +340,35 @@ tbody tr:hover{
     }
 }
 
-@media(max-width:600px){
+@media(max-width:650px){
+    .navbar{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .menu{
+        width:100%;
+    }
+
+    .menu a{
+        display:inline-block;
+    }
+
     .kpi,
     .kpi-secundario{
         grid-template-columns:1fr;
     }
 
-    .navbar{
-        flex-direction:column;
-        gap:15px;
+    .container{
+        padding:20px;
     }
 
-    .menu{
-        text-align:center;
+    .hero h1{
+        font-size:26px;
     }
 
-    .menu a{
-        display:inline-block;
-        margin-top:8px;
+    table{
+        font-size:13px;
     }
 }
 </style>
@@ -263,21 +378,36 @@ tbody tr:hover{
 
 <div class="navbar">
 
-    <div class="logo">OPSEG</div>
+    <div class="brand">
+        <div class="brand-icon">📊</div>
+
+        <div>
+            <div class="brand-title">SGR</div>
+            <div class="brand-subtitle">Sistema de Gestão de Relatórios</div>
+        </div>
+    </div>
 
     <div class="menu">
         <a href="/">Dashboard</a>
-        <a href="/grafico?mes={{ mes_selecionado }}">Gráfico</a>
+        <a href="/grafico">Gráfico</a>
 
         {% if is_admin %}
         <a href="/ranking">Ranking</a>
         <a href="/usuarios">Usuários</a>
         <a href="/clientes">Clientes</a>
         <a href="/importar_excel">Importar Excel</a>
-        <a href="/backup">💾 Backup</a>
         <a href="/historico">Histórico</a>
         <a href="/exportar_excel">Excel</a>
         {% endif %}
+
+        <span class="user-badge">
+            👤 {{ current_user.id }}
+            {% if is_admin %}
+            <small>Administrador</small>
+            {% else %}
+            <small>Operador</small>
+            {% endif %}
+        </span>
 
         <a href="/logout">Sair</a>
     </div>
@@ -286,10 +416,26 @@ tbody tr:hover{
 
 <div class="container">
 
-    <div class="titulo">Painel Principal</div>
+    <div class="hero">
 
-    <div class="mes-info">
-        Visualizando mês: {{ mes_selecionado }}
+        <h1>Dashboard Operacional</h1>
+
+        <p>
+            Bem-vindo ao SGR - Sistema de Gestão de Relatórios.
+            Acompanhe a produção, os registros e os indicadores operacionais.
+        </p>
+
+        <div class="hero-info">
+            <div class="hero-tag">Versão 2.1</div>
+            <div class="hero-tag">Usuário: {{ current_user.id }}</div>
+
+            {% if is_admin %}
+            <div class="hero-tag">Perfil: Administrador</div>
+            {% else %}
+            <div class="hero-tag">Perfil: Operador</div>
+            {% endif %}
+        </div>
+
     </div>
 
     <div class="kpi">
@@ -297,7 +443,7 @@ tbody tr:hover{
         <div class="card">
             <h3>Total de Registros</h3>
             <p>{{ registros|length }}</p>
-            <span>Registros do mês selecionado</span>
+            <span>Registros filtrados na tela</span>
         </div>
 
         {% if is_admin %}
@@ -333,27 +479,27 @@ tbody tr:hover{
         <div class="card">
             <h3>Registros do Mês</h3>
             <p>{{ registros_mes|default(0) }}</p>
-            <span>Mês selecionado</span>
+            <span>Produção mensal</span>
         </div>
 
         <div class="card">
             <h3>Total Produzido</h3>
             <p>R$ {{ total_produzido|default('0.00') }}</p>
-            <span>Baseado no mês selecionado</span>
+            <span>Baseado nos níveis</span>
         </div>
 
         {% if is_admin %}
         <div class="card">
             <h3>Melhor Operador</h3>
             <p>{{ melhor_operador|default('-') }}</p>
-            <span>Maior número de registros no mês</span>
+            <span>Maior número de registros</span>
         </div>
         {% endif %}
 
         <div class="card">
             <h3>Cliente Mais Atendido</h3>
             <p>{{ cliente_top|default('-') }}</p>
-            <span>Cliente com mais registros no mês</span>
+            <span>Cliente com mais registros</span>
         </div>
 
     </div>
@@ -362,7 +508,7 @@ tbody tr:hover{
 
     <div class="form-box">
 
-        <h2 style="margin-bottom:20px;">Novo Registro</h2>
+        <h2 class="box-title">Novo Registro</h2>
 
         <form method="POST">
 
@@ -407,7 +553,7 @@ tbody tr:hover{
 
     <div class="filtro-box">
 
-        <h2 style="margin-bottom:20px;">Filtros</h2>
+        <h2 class="box-title">Filtros</h2>
 
         <form method="GET">
 
@@ -418,12 +564,6 @@ tbody tr:hover{
                     name="busca"
                     placeholder="Buscar por título, cliente ou operador"
                     value="{{ busca if busca else '' }}"
-                >
-
-                <input
-                    type="month"
-                    name="mes"
-                    value="{{ mes_selecionado }}"
                 >
 
                 <input
@@ -452,7 +592,7 @@ tbody tr:hover{
 
     <div class="table-box">
 
-        <h2 style="margin-bottom:20px;">Registros do mês selecionado</h2>
+        <h2 class="box-title">Registros</h2>
 
         {% if is_admin %}
         <a href="/exportar_excel" class="exportar">Exportar Excel</a>
@@ -517,11 +657,7 @@ tbody tr:hover{
                 {% else %}
 
                 <tr>
-                    {% if is_admin %}
-                    <td colspan="7">Nenhum registro encontrado para o mês selecionado.</td>
-                    {% else %}
-                    <td colspan="6">Nenhum registro encontrado para o mês selecionado.</td>
-                    {% endif %}
+                    <td colspan="7">Nenhum registro encontrado.</td>
                 </tr>
 
                 {% endfor %}
@@ -532,6 +668,11 @@ tbody tr:hover{
 
     </div>
 
+</div>
+
+<div class="footer">
+    SGR v2.1 - Sistema de Gestão de Relatórios<br>
+    © 2026 Rodrigo Monteiro Trindade
 </div>
 
 </body>
