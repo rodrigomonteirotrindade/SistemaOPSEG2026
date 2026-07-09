@@ -127,7 +127,7 @@ tbody tr:hover{background:#e0f2fe;}
         <p>Bem-vindo ao SGR - Sistema de Gestão de Relatórios. Acompanhe a produção, os registros e os indicadores operacionais.</p>
 
         <div class="hero-info">
-            <div class="hero-tag">Versão 2.1</div>
+            <div class="hero-tag">Versão 2.2</div>
             <div class="hero-tag">Usuário: {{ current_user.id }}</div>
 
             {% if is_admin %}
@@ -266,8 +266,21 @@ tbody tr:hover{background:#e0f2fe;}
 
             <div class="admin-card">
                 <h3>📤 Exportar Excel</h3>
-                <p>Baixe os registros lançados em formato Excel.</p>
-                <a href="/exportar_excel" class="btn-blue">Exportar Registros</a>
+                <p>Selecione o mês desejado e baixe somente os registros daquele período.</p>
+
+                <form method="GET" action="/exportar_excel">
+                    <input
+                        type="month"
+                        name="mes"
+                        value="{{ mes_selecionado }}"
+                        required
+                        style="margin-bottom:10px;"
+                    >
+
+                    <button type="submit" class="btn-blue" style="width:100%;">
+                        Exportar Registros
+                    </button>
+                </form>
             </div>
 
             <div class="admin-card">
@@ -371,7 +384,7 @@ tbody tr:hover{background:#e0f2fe;}
 </div>
 
 <div class="footer">
-    SGR v2.1 - Sistema de Gestão de Relatórios<br>
+    SGR v2.2 - Sistema de Gestão de Relatórios<br>
     © 2026 Rodrigo Monteiro Trindade
 </div>
 

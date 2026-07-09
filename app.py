@@ -1056,14 +1056,45 @@ def exportar_excel():
     conn = get_db()
     c = conn.cursor()
 
-    if is_admin():
-        c.execute("SELECT * FROM registros ORDER BY id DESC")
-    else:
-        c.execute(
-            "SELECT * FROM registros WHERE colaborador=%s ORDER BY id DESC",
-            (current_user.id,)
-        )
+    mes = request.args.get("mes", "")
+    busca = request.args.get("busca", "")
+    inicio = request.args.get("inicio", "")
+    fim = request.args.get("fim", "")
 
+    mes_selecionado, inicio_mes, fim_mes = obter_periodo_mes(mes)
+
+    sql = """
+        SELECT * FROM registros
+        WHERE data >= %s AND data < %s
+    """
+    params = [inicio_mes, fim_mes]
+
+    if not is_admin():
+        sql += " AND colaborador=%s"
+        params.append(current_user.id)
+
+    if busca:
+        sql += """
+            AND (
+                titulo ILIKE %s
+                OR cliente ILIKE %s
+                OR colaborador ILIKE %s
+            )
+        """
+        termo = f"%{busca}%"
+        params.extend([termo, termo, termo])
+
+    if inicio:
+        sql += " AND data >= %s"
+        params.append(inicio)
+
+    if fim:
+        sql += " AND data <= %s"
+        params.append(fim)
+
+    sql += " ORDER BY id DESC"
+
+    c.execute(sql, params)
     registros = c.fetchall()
     conn.close()
 
@@ -1087,10 +1118,17 @@ def exportar_excel():
     wb.save(arquivo)
     arquivo.seek(0)
 
+    nome_mes = mes_selecionado.replace("-", "_")
+
+    registrar_historico(
+        current_user.id,
+        f"Exportou registros do mês {mes_selecionado}"
+    )
+
     return send_file(
         arquivo,
         as_attachment=True,
-        download_name="registros.xlsx",
+        download_name=f"registros_{nome_mes}.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
