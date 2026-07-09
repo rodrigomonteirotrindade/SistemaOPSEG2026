@@ -1114,6 +1114,55 @@ def backup():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+# =========================
+# EXCLUIR REGISTROS DO MÊS
+# =========================
+
+@app.route("/excluir_mes", methods=["POST"])
+@login_required
+def excluir_mes():
+    if not is_admin():
+        return "Acesso negado"
+
+    mes = request.form.get("mes")
+    confirmacao = request.form.get("confirmacao", "").strip().upper()
+
+    if not mes:
+        flash("Selecione o mês que deseja excluir.")
+        return redirect("/")
+
+    if confirmacao != "EXCLUIR":
+        flash("Confirmação inválida. Digite EXCLUIR para confirmar.")
+        return redirect("/")
+
+    try:
+        ano, mes_numero = mes.split("-")
+
+        conn = get_db()
+        c = conn.cursor()
+
+        c.execute("""
+            DELETE FROM registros
+            WHERE EXTRACT(YEAR FROM data) = %s
+            AND EXTRACT(MONTH FROM data) = %s
+        """, (ano, mes_numero))
+
+        apagados = c.rowcount
+
+        conn.commit()
+        conn.close()
+
+        registrar_historico(
+            current_user.id,
+            f"Excluiu {apagados} registros do mês {mes_numero}/{ano}"
+        )
+
+        flash(f"{apagados} registros do mês {mes_numero}/{ano} foram excluídos com sucesso.")
+        return redirect("/")
+
+    except Exception as e:
+        flash(f"Erro ao excluir registros do mês: {e}")
+        return redirect("/")
 
 # =========================
 # DIAGNÓSTICO
